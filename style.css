@@ -1,4 +1,4 @@
-/* ============================================================
+۷/* ============================================================
    BIZA MARKET — RED GLASS / BLACK — MOBILE FIRST
    فقط CSS — HTML / JS / DATABASE بدون تغییر
    ============================================================ */
@@ -2428,3 +2428,892 @@ select:focus-visible{
         border-radius:18px;
     }
 }
+/* ============================================================
+   BIZA MARKET — EXACT RED / DARK NAVY COLOR OVERRIDE
+   فقط رنگ‌ها — بدون تغییر شکل، اندازه، فاصله یا Layout
+   ============================================================ */
+
+:root{
+    /* ===== BACKGROUND ===== */
+    --bg:#000000;
+    --bg-soft:#090a0f;
+
+    /* ===== CARDS / GLASS ===== */
+    --card:rgba(37,40,55,.82);
+    --card-solid:#252837;
+
+    --glass:rgba(255,255,255,.055);
+    --glass-strong:rgba(255,255,255,.09);
+
+    /* ===== TEXT ===== */
+    --text:#ffffff;
+    --muted:#9699a5;
+
+    /* ===== BORDERS ===== */
+    --border:rgba(255,255,255,.10);
+    --border-red:rgba(237,28,36,.38);
+
+    /* ===== MAIN RED ===== */
+    --primary:#ed1c24;
+    --primary-dark:#b90f15;
+    --primary-light:rgba(237,28,36,.13);
+
+    /* ===== ALL STATUS COLORS → RED THEME ===== */
+    --success:#ed1c24;
+    --success-dark:#bd1219;
+    --success-light:rgba(237,28,36,.10);
+
+    --danger:#ff3038;
+    --danger-dark:#c81017;
+    --danger-light:rgba(237,28,36,.11);
+
+    --warning:#ed1c24;
+    --warning-light:rgba(237,28,36,.10);
+
+    /* ===== DARK ===== */
+    --dark:#000000;
+    --dark-2:#252837;
+
+    /* ===== GLOW ===== */
+    --red-glow:
+        0 0 22px rgba(237,28,36,.20);
+
+    --red-glow-strong:
+        0 0 32px rgba(237,28,36,.40);
+}
+
+
+/* ============================================================
+   BODY
+   ============================================================ */
+
+body{
+    background-color:#000000;
+
+    background-image:
+        radial-gradient(
+            circle at 90% -5%,
+            rgba(237,28,36,.16),
+            transparent 30%
+        ),
+        radial-gradient(
+            circle at 5% 35%,
+            rgba(237,28,36,.055),
+            transparent 25%
+        ),
+        radial-gradient(
+            circle at 50% 100%,
+            rgba(120,0,10,.06),
+            transparent 30%
+        ),
+        linear-gradient(
+            135deg,
+            rgba(255,255,255,.012) 1px,
+            transparent 1px
+        ),
+        linear-gradient(
+            45deg,
+            rgba(255,255,255,.008) 1px,
+            transparent 1px
+        );
+}
+
+
+/* ============================================================
+   SELECTION
+   ============================================================ */
+
+::selection{
+    background:rgba(237,28,36,.40);
+    color:#fff;
+}
+
+
+/* ============================================================
+   TOPBAR
+   ============================================================ */
+
+.topbar{
+    background:
+        linear-gradient(
+            135deg,
+            rgba(37,40,55,.96),
+            rgba(12,13,18,.96)
+        );
+
+    border-bottom-color:
+        rgba(237,28,36,.18);
+}
+
+.topbar::after{
+    background:
+        linear-gradient(
+            90deg,
+            transparent 5%,
+            rgba(237,28,36,.85) 50%,
+            transparent 95%
+        );
+
+    box-shadow:
+        0 0 12px rgba(237,28,36,.45);
+}
+
+.topbar h1{
+    text-shadow:
+        0 0 16px rgba(237,28,36,.30);
+}
+
+.connection-status{
+    color:rgba(255,80,88,.82);
+}
+
+.connection-status.connected{
+    color:#ed1c24;
+}
+
+.connection-status.local{
+    color:#ff5960;
+}
+
+.connection-status.error{
+    color:#ff3038;
+}
+
+
+/* ============================================================
+   ICON BUTTON
+   ============================================================ */
+
+.icon-button{
+    background:
+        linear-gradient(
+            145deg,
+            rgba(255,255,255,.09),
+            rgba(37,40,55,.55)
+        );
+
+    border-color:
+        rgba(255,255,255,.12);
+}
+
+.icon-button:hover{
+    background:rgba(237,28,36,.15);
+    border-color:rgba(237,28,36,.45);
+
+    box-shadow:
+        0 0 22px rgba(237,28,36,.22);
+}
+
+
+/* ============================================================
+   BOTTOM NAVIGATION
+   ============================================================ */
+
+.navigation{
+    background:
+        linear-gradient(
+            145deg,
+            rgba(37,40,55,.96),
+            rgba(10,11,15,.96)
+        );
+
+    border-color:
+        rgba(255,255,255,.11);
+
+    box-shadow:
+        0 15px 50px rgba(0,0,0,.80),
+        inset 0 1px 0 rgba(255,255,255,.07);
+}
+
+.navigation::before{
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            rgba(237,28,36,.50),
+            transparent
+        );
+}
+
+.nav-btn{
+    color:#777b87;
+}
+
+.nav-btn:hover{
+    color:#e5e5e5;
+    background:rgba(255,255,255,.035);
+}
+
+.nav-btn.active{
+    color:#fff;
+
+    background:
+        radial-gradient(
+            circle at 50% 42%,
+            rgba(237,28,36,.27),
+            transparent 67%
+        );
+}
+
+.nav-btn.active span{
+    filter:
+        drop-shadow(
+            0 0 9px rgba(237,28,36,.95)
+        );
+}
+
+.nav-btn.active::before{
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            #ed1c24,
+            transparent
+        );
+
+    box-shadow:
+        0 0 14px rgba(237,28,36,.90);
+}
+
+
+/* ============================================================
+   TITLES
+   ============================================================ */
+
+.page-title h2{
+    color:#fff;
+
+    text-shadow:
+        0 0 22px rgba(237,28,36,.18);
+}
+
+
+/* ============================================================
+   PRIMARY BUTTONS
+   ============================================================ */
+
+.primary-button{
+    background:
+        linear-gradient(
+            135deg,
+            #ff3038 0%,
+            #ed1c24 48%,
+            #b90f15 100%
+        );
+
+    border-color:
+        rgba(255,90,98,.48);
+
+    box-shadow:
+        0 7px 24px rgba(237,28,36,.30),
+        inset 0 1px 0 rgba(255,255,255,.18);
+}
+
+.primary-button:hover{
+    background:
+        linear-gradient(
+            135deg,
+            #ff424a,
+            #ed1c24 50%,
+            #c81017
+        );
+
+    box-shadow:
+        0 10px 32px rgba(237,28,36,.43),
+        0 0 20px rgba(237,28,36,.22);
+}
+
+
+/* ============================================================
+   SECONDARY BUTTON
+   ============================================================ */
+
+.secondary-button{
+    background:
+        linear-gradient(
+            145deg,
+            rgba(255,255,255,.085),
+            rgba(37,40,55,.65)
+        );
+
+    color:#e0e0e4;
+}
+
+.secondary-button:hover{
+    background:
+        rgba(255,255,255,.10);
+
+    border-color:
+        rgba(237,28,36,.34);
+}
+
+
+/* ============================================================
+   STAT CARDS
+   ============================================================ */
+
+.stat-card{
+    background:
+        linear-gradient(
+            145deg,
+            rgba(37,40,55,.92),
+            rgba(17,18,24,.82)
+        );
+
+    border-color:
+        rgba(255,255,255,.10);
+}
+
+.stat-card:hover{
+    border-color:
+        rgba(237,28,36,.35);
+
+    box-shadow:
+        var(--shadow-md),
+        0 0 22px rgba(237,28,36,.20);
+}
+
+.stat-icon{
+    background:
+        linear-gradient(
+            145deg,
+            rgba(237,28,36,.25),
+            rgba(237,28,36,.07)
+        );
+
+    color:#ff3038;
+
+    border-color:
+        rgba(237,28,36,.30);
+
+    box-shadow:
+        0 0 20px rgba(237,28,36,.13),
+        inset 0 1px 0 rgba(255,255,255,.07);
+}
+
+
+/* ============================================================
+   DASHBOARD ACTIONS
+   ============================================================ */
+
+.big-action{
+    background:
+        linear-gradient(
+            145deg,
+            rgba(37,40,55,.90),
+            rgba(15,16,21,.82)
+        );
+
+    border-color:
+        rgba(255,255,255,.10);
+}
+
+.big-action:hover{
+    border-color:
+        rgba(237,28,36,.35);
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(237,28,36,.13),
+            rgba(37,40,55,.75)
+        );
+
+    box-shadow:
+        var(--shadow-md),
+        0 0 22px rgba(237,28,36,.20);
+}
+
+.big-action span{
+    filter:
+        drop-shadow(
+            0 0 9px rgba(237,28,36,.50)
+        );
+}
+
+.big-action.primary{
+    border-color:
+        rgba(237,28,36,.42);
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(237,28,36,.28),
+            rgba(55,10,15,.30)
+        );
+
+    box-shadow:
+        0 12px 35px rgba(237,28,36,.17),
+        inset 0 1px 0 rgba(255,255,255,.07);
+}
+
+
+/* ============================================================
+   GLASS CARDS
+   ============================================================ */
+
+.section-card{
+    background:
+        linear-gradient(
+            145deg,
+            rgba(37,40,55,.90),
+            rgba(14,15,20,.82)
+        );
+
+    border-color:
+        rgba(255,255,255,.10);
+}
+
+.section-card:hover{
+    border-color:
+        rgba(237,28,36,.28);
+}
+
+.section-header button{
+    color:#ff3038;
+}
+
+.section-header button:hover{
+    background:
+        rgba(237,28,36,.11);
+}
+
+
+/* ============================================================
+   SEARCH
+   ============================================================ */
+
+.search-box{
+    background:
+        linear-gradient(
+            145deg,
+            rgba(37,40,55,.88),
+            rgba(15,16,21,.80)
+        );
+
+    border-color:
+        rgba(255,255,255,.11);
+}
+
+.search-box:focus-within{
+    border-color:
+        rgba(237,28,36,.52);
+
+    box-shadow:
+        0 0 0 3px rgba(237,28,36,.08),
+        0 0 25px rgba(237,28,36,.13);
+}
+
+.search-box input::placeholder{
+    color:#747783;
+}
+
+
+/* ============================================================
+   PRODUCT CARD
+   ============================================================ */
+
+.product-card{
+    background:
+        linear-gradient(
+            145deg,
+            rgba(37,40,55,.94),
+            rgba(16,17,22,.82)
+        );
+
+    border-color:
+        rgba(255,255,255,.10);
+}
+
+.product-card:hover{
+    border-color:
+        rgba(237,28,36,.34);
+
+    box-shadow:
+        var(--shadow-md),
+        0 0 22px rgba(237,28,36,.20);
+}
+
+.product-price strong{
+    color:#ff3038;
+
+    text-shadow:
+        0 0 12px rgba(237,28,36,.30);
+}
+
+
+/* ============================================================
+   SMALL BUTTONS
+   ============================================================ */
+
+.small-button{
+    background:
+        rgba(255,255,255,.06);
+
+    color:#d9d9de;
+}
+
+.small-button:hover{
+    background:
+        rgba(255,255,255,.09);
+
+    border-color:
+        rgba(237,28,36,.30);
+}
+
+.small-button.danger{
+    color:#ff424a;
+
+    background:
+        rgba(237,28,36,.09);
+
+    border-color:
+        rgba(237,28,36,.24);
+}
+
+.small-button.danger:hover{
+    background:
+        rgba(237,28,36,.18);
+
+    border-color:
+        rgba(237,28,36,.45);
+
+    color:#ff6269;
+}
+
+
+/* ============================================================
+   SALE
+   ============================================================ */
+
+.sale-search input{
+    background:
+        rgba(37,40,55,.78);
+
+    border-color:
+        rgba(255,255,255,.11);
+}
+
+.sale-search input:focus{
+    border-color:
+        rgba(237,28,36,.52);
+
+    box-shadow:
+        0 0 0 3px rgba(237,28,36,.08),
+        0 0 22px rgba(237,28,36,.12);
+}
+
+.sale-search button{
+    background:
+        linear-gradient(
+            145deg,
+            rgba(237,28,36,.20),
+            rgba(110,8,14,.18)
+        );
+
+    color:#ff4b53;
+
+    border-color:
+        rgba(237,28,36,.30);
+}
+
+.sale-search button:hover{
+    background:
+        rgba(237,28,36,.25);
+
+    box-shadow:
+        0 0 22px rgba(237,28,36,.20);
+}
+
+.sale-result{
+    background:
+        linear-gradient(
+            145deg,
+            rgba(37,40,55,.86),
+            rgba(15,16,21,.80)
+        );
+
+    border-color:
+        rgba(255,255,255,.09);
+}
+
+.sale-total strong{
+    color:#ff3038;
+
+    text-shadow:
+        0 0 14px rgba(237,28,36,.30);
+}
+
+
+/* ============================================================
+   INVENTORY
+   ============================================================ */
+
+.inventory-summary > div{
+    background:
+        linear-gradient(
+            145deg,
+            rgba(37,40,55,.90),
+            rgba(15,16,21,.80)
+        );
+
+    border-color:
+        rgba(255,255,255,.10);
+}
+
+
+/* ============================================================
+   MODAL
+   ============================================================ */
+
+.modal{
+    background:
+        radial-gradient(
+            circle at 50% 100%,
+            rgba(237,28,36,.10),
+            transparent 40%
+        ),
+        rgba(0,0,0,.86);
+}
+
+.modal-box{
+    background:
+        linear-gradient(
+            145deg,
+            rgba(37,40,55,.98),
+            rgba(8,9,12,.99)
+        );
+
+    border-color:
+        rgba(255,255,255,.11);
+
+    box-shadow:
+        var(--shadow-lg),
+        0 -15px 55px rgba(237,28,36,.10),
+        inset 0 1px 0 rgba(255,255,255,.06);
+}
+
+.modal-header{
+    border-bottom-color:
+        rgba(255,255,255,.09);
+}
+
+.close-button{
+    background:
+        rgba(237,28,36,.10);
+
+    color:#ff4b53;
+
+    border-color:
+        rgba(237,28,36,.25);
+}
+
+.close-button:hover{
+    background:
+        rgba(237,28,36,.20);
+
+    box-shadow:
+        0 0 22px rgba(237,28,36,.22);
+}
+
+.modal-box input,
+.modal-box select{
+    background:
+        rgba(37,40,55,.78);
+
+    border-color:
+        rgba(255,255,255,.11);
+}
+
+.modal-box input:hover,
+.modal-box select:hover{
+    border-color:
+        rgba(237,28,36,.30);
+}
+
+.modal-box input:focus,
+.modal-box select:focus{
+    border-color:
+        #ed1c24;
+
+    box-shadow:
+        0 0 0 3px rgba(237,28,36,.08),
+        0 0 20px rgba(237,28,36,.12);
+
+    background:
+        rgba(237,28,36,.05);
+}
+
+.modal-product-name{
+    background:
+        linear-gradient(
+            145deg,
+            rgba(237,28,36,.12),
+            rgba(237,28,36,.045)
+        );
+
+    border-color:
+        rgba(237,28,36,.22);
+
+    color:#ff7379;
+}
+
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+
+.toast{
+    background:
+        linear-gradient(
+            145deg,
+            rgba(37,40,55,.96),
+            rgba(10,11,15,.96)
+        );
+
+    border-color:
+        rgba(237,28,36,.26);
+
+    box-shadow:
+        0 10px 35px rgba(0,0,0,.65),
+        0 0 22px rgba(237,28,36,.20);
+}
+
+
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
+
+::-webkit-scrollbar-track{
+    background:#050507;
+}
+
+::-webkit-scrollbar-thumb{
+    background:#303341;
+}
+
+::-webkit-scrollbar-thumb:hover{
+    background:#ed1c24;
+}
+
+
+/* ============================================================
+   BARCODE
+   ============================================================ */
+
+.barcode-scan-btn{
+    background:
+        linear-gradient(
+            135deg,
+            #ff3038,
+            #c81017
+        );
+
+    border-color:
+        rgba(255,90,98,.42);
+
+    box-shadow:
+        0 6px 20px rgba(237,28,36,.26),
+        inset 0 1px 0 rgba(255,255,255,.15);
+}
+
+.barcode-hint{
+    color:#777b87;
+}
+
+.barcode-scanner-modal{
+    background:
+        radial-gradient(
+            circle,
+            rgba(237,28,36,.09),
+            transparent 45%
+        ),
+        rgba(0,0,0,.90);
+}
+
+.barcode-scanner-card{
+    background:
+        linear-gradient(
+            145deg,
+            #252837,
+            #08090c
+        );
+
+    border-color:
+        rgba(255,255,255,.11);
+
+    box-shadow:
+        0 24px 70px rgba(0,0,0,.82),
+        0 0 40px rgba(237,28,36,.11);
+}
+
+.barcode-scanner-header{
+    background:
+        linear-gradient(
+            135deg,
+            #35090d,
+            #100306
+        );
+
+    border-bottom-color:
+        rgba(237,28,36,.20);
+}
+
+.barcode-close-btn{
+    background:
+        rgba(255,255,255,.07);
+
+    border-color:
+        rgba(255,255,255,.12);
+}
+
+.barcode-close-btn:hover{
+    background:
+        rgba(237,28,36,.16);
+
+    border-color:
+        rgba(237,28,36,.32);
+}
+
+.barcode-target{
+    border-color:
+        rgba(255,45,55,.95);
+
+    box-shadow:
+        0 0 0 999px rgba(0,0,0,.35),
+        0 0 30px rgba(237,28,36,.32);
+}
+
+.barcode-target::before,
+.barcode-target::after,
+.barcode-target span::before,
+.barcode-target span::after{
+    border-color:#ff3d45;
+
+    filter:
+        drop-shadow(
+            0 0 6px rgba(237,28,36,.80)
+        );
+}
+
+.barcode-manual-btn{
+    background:
+        rgba(237,28,36,.09);
+
+    color:#ff6870;
+
+    border-color:
+        rgba(237,28,36,.24);
+}
+
+
+/* ============================================================
+   FOCUS
+   ============================================================ */
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible{
+    outline-color:
+        rgba(237,28,36,.75);
+   }
