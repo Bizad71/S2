@@ -1,1192 +1,269 @@
 <!DOCTYPE html><html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>BizadShop</title><style>
-*{
-    box-sizing:border-box;
-    -webkit-tap-highlight-color:transparent;
-}
-
-html,body{
-    margin:0;
-    padding:0;
-    width:100%;
-    min-height:100%;
-}
-
-body{
-    background:#f5f7f8;
-    color:#17233c;
-    font-family:Tahoma,Arial,sans-serif;
-}
-
-button,input,select{
-    font-family:inherit;
-}
-
-button{
-    cursor:pointer;
-}
-
-.app{
-    width:100%;
-    max-width:520px;
-    min-height:100vh;
-    margin:auto;
-    position:relative;
-    background:#f5f7f8;
-}
-
-/* HEADER */
-
-.header{
-    position:fixed;
-    top:0;
-    right:0;
-    left:0;
-    width:100%;
-    max-width:520px;
-    height:154px;
-    margin:auto;
-    z-index:50;
-    padding:13px 14px 20px;
-    background:
-        linear-gradient(
-            to bottom,
-            #d71920 0%,
-            #dd2e34 45%,
-            rgba(226,65,70,.68) 70%,
-            rgba(245,247,248,0) 100%
-        );
-}
-
-.header-top{
-    height:45px;
-    display:grid;
-    grid-template-columns:45px 1fr 45px;
-    align-items:center;
-}
-
-.connection{
-    width:10px;
-    height:10px;
-    border-radius:50%;
-    justify-self:end;
-    background:#dc2626;
-    box-shadow:
-        0 0 0 3px rgba(255,255,255,.18),
-        0 0 10px rgba(220,38,38,.65);
-    transition:.25s;
-}
-
-.connection.connected{
-    background:#22c55e;
-    box-shadow:
-        0 0 0 3px rgba(255,255,255,.18),
-        0 0 10px rgba(34,197,94,.75);
-}
-
-.shop-name{
-    color:white;
-    font-size:17px;
-    font-weight:700;
-    text-align:center;
-}
-
-.menu-button{
-    width:40px;
-    height:40px;
-    border:0;
-    background:transparent;
-    color:white;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    justify-self:start;
-    opacity:1;
-}
-
-.menu-dots{
-    font-size:27px;
-    line-height:1;
-    font-weight:900;
-    transform:translateY(-2px);
-}
-
-.folder-button{
-    display:block;
-    margin:7px auto 0;
-    min-width:150px;
-    height:37px;
-    padding:0 19px;
-    border:1px solid rgba(255,255,255,.45);
-    border-radius:12px;
-    background:rgba(255,255,255,.14);
-    color:white;
-    font-size:12px;
-    font-weight:700;
-}
-
-/* LOCK */
-
-.lock-screen{
-    position:fixed;
-    top:154px;
-    right:0;
-    bottom:0;
-    left:0;
-    width:100%;
-    max-width:520px;
-    margin:auto;
-    z-index:40;
-    padding:55px 25px 100px;
-    background:#f5f7f8;
-    display:flex;
-    justify-content:center;
-    text-align:center;
-    transition:.3s;
-}
-
-.lock-screen.hidden{
-    opacity:0;
-    visibility:hidden;
-    pointer-events:none;
-}
-
-.lock-box{
-    width:100%;
-    max-width:360px;
-    padding:30px 24px;
-    background:white;
-    border-radius:20px;
-    box-shadow:0 8px 30px rgba(23,35,60,.08);
-}
-
-.lock-icon{
-    width:58px;
-    height:58px;
-    margin:0 auto 18px;
-    border-radius:50%;
-    background:rgba(215,25,32,.08);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-}
-
-.lock-icon::before{
-    content:"🔒";
-    font-size:25px;
-}
-
-.lock-title{
-    margin:0 0 9px;
-    font-size:17px;
-    font-weight:800;
-}
-
-.lock-text{
-    margin:0 0 22px;
-    color:#718096;
-    font-size:12px;
-    line-height:2;
-}
-
-.connect-button{
-    width:100%;
-    height:48px;
-    border:0;
-    border-radius:13px;
-    background:#d71920;
-    color:white;
-    font-size:13px;
-    font-weight:700;
-}
-
-/* CONTENT */
-
-.content{
-    min-height:100vh;
-    padding:135px 13px 100px;
-}
-
-.page{
-    display:none;
-}
-
-.page.active{
-    display:block;
-}
-
-.page-title{
-    margin:0 0 16px;
-    font-size:20px;
-    font-weight:800;
-}
-
-/* HOME */
-
-.stats-grid{
-    display:grid;
-    grid-template-columns:repeat(2,1fr);
-    gap:10px;
-    margin-bottom:18px;
-}
-
-.stat-card{
-    min-height:118px;
-    padding:15px;
-    background:white;
-    border-radius:17px;
-    box-shadow:0 5px 18px rgba(23,35,60,.05);
-}
-
-.stat-card.clickable{
-    cursor:pointer;
-}
-
-.stat-label{
-    color:#7a8497;
-    font-size:11px;
-    font-weight:600;
-}
-
-.stat-value{
-    margin-top:13px;
-    font-size:20px;
-    font-weight:900;
-}
-
-.stat-change{
-    margin-top:9px;
-    font-size:10px;
-    font-weight:700;
-}
-
-.up{color:#16a34a}
-.down{color:#dc2626}
-.warning{color:#dc2626}
-.info{color:#2563eb}
-
-.add-product-card{
-    min-height:118px;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    text-align:center;
-}
-
-.big-plus{
-    width:48px;
-    height:48px;
-    border-radius:50%;
-    background:#16a34a;
-    color:white;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-size:32px;
-    font-weight:400;
-    line-height:1;
-    margin-bottom:7px;
-}
-
-/* FORM */
-
-.form-card{
-    background:white;
-    border-radius:17px;
-    padding:16px;
-    box-shadow:0 5px 18px rgba(23,35,60,.05);
-}
-
-.form-group{
-    margin-bottom:12px;
-}
-
-.form-label{
-    display:block;
-    margin-bottom:6px;
-    color:#697386;
-    font-size:10px;
-    font-weight:700;
-}
-
-.form-row{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:8px;
-}
-
-.form-input,
-.form-select{
-    width:100%;
-    height:45px;
-    padding:0 12px;
-    border:1px solid #e0e5eb;
-    border-radius:11px;
-    background:white;
-    color:#17233c;
-    outline:none;
-    font-size:12px;
-}
-
-.form-input:focus,
-.form-select:focus{
-    border-color:#d71920;
-}
-
-.barcode-form-row{
-    display:grid;
-    grid-template-columns:1fr 48px;
-    gap:7px;
-}
-
-.small-scan{
-    height:45px;
-    border:0;
-    border-radius:11px;
-    background:#d71920;
-    color:white;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-}
-
-.save-button{
-    width:100%;
-    height:47px;
-    margin-top:5px;
-    border:0;
-    border-radius:12px;
-    background:#16a34a;
-    color:white;
-    font-size:13px;
-    font-weight:800;
-}
-
-.cancel-button{
-    width:100%;
-    height:43px;
-    margin-top:8px;
-    border:1px solid #e0e5eb;
-    border-radius:12px;
-    background:white;
-    color:#17233c;
-    font-size:12px;
-    font-weight:700;
-}
-
-/* SALE */
-
-.barcode-row{
-    display:grid;
-    grid-template-columns:1fr 48px;
-    gap:8px;
-    margin-bottom:12px;
-}
-
-.barcode-input{
-    width:100%;
-    height:48px;
-    padding:0 15px;
-    border:1px solid #e0e5eb;
-    border-radius:13px;
-    background:white;
-    color:#17233c;
-    font-size:13px;
-    outline:none;
-}
-
-.scan-button{
-    height:48px;
-    border:0;
-    border-radius:13px;
-    background:#d71920;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-}
-
-.barcode-symbol{
-    width:23px;
-    height:23px;
-    border-left:2px solid white;
-    border-right:2px solid white;
-    position:relative;
-}
-
-.barcode-symbol::before{
-    content:"";
-    position:absolute;
-    width:2px;
-    height:19px;
-    top:2px;
-    left:3px;
-    background:white;
-    box-shadow:
-        4px 0 0 white,
-        8px 0 0 white,
-        14px 0 0 white;
-}
-
-.product-card{
-    padding:18px;
-    background:white;
-    border-radius:17px;
-    box-shadow:0 5px 18px rgba(23,35,60,.05);
-}
-
-.product-name{
-    font-size:16px;
-    font-weight:800;
-}
-
-.product-info{
-    margin-top:14px;
-    padding-top:12px;
-    border-top:1px solid #edf0f3;
-}
-
-.info-row{
-    display:flex;
-    justify-content:space-between;
-    margin-bottom:8px;
-}
-
-.info-label{
-    color:#8992a3;
-    font-size:10px;
-}
-
-.info-value{
-    font-size:12px;
-    font-weight:700;
-}
-
-.price-value{
-    color:#16a34a;
-    font-size:15px;
-    font-weight:900;
-}
-
-.product-action{
-    margin-top:15px;
-    display:grid;
-    grid-template-columns:1fr 65px;
-    gap:8px;
-}
-
-.add-button{
-    height:43px;
-    border:0;
-    border-radius:11px;
-    background:#16a34a;
-    color:white;
-    font-size:12px;
-    font-weight:700;
-}
-
-.quantity{
-    width:100%;
-    height:43px;
-    border:1px solid #e0e5eb;
-    border-radius:11px;
-    text-align:center;
-    font-size:13px;
-    font-weight:700;
-}
-
-.section-title{
-    margin:22px 3px 11px;
-    font-size:14px;
-    font-weight:800;
-}
-
-.selected-list{
-    background:white;
-    border-radius:17px;
-    overflow:hidden;
-    box-shadow:0 5px 18px rgba(23,35,60,.05);
-}
-
-.selected-item{
-    min-height:61px;
-    padding:11px 15px;
-    display:grid;
-    grid-template-columns:1fr auto auto;
-    align-items:center;
-    gap:10px;
-    border-bottom:1px solid #edf0f3;
-}
-
-.selected-name{
-    font-size:12px;
-    font-weight:700;
-}
-
-.selected-price{
-    color:#16a34a;
-    font-size:11px;
-    font-weight:800;
-}
-
-.selected-quantity{
-    color:#d71920;
-    font-size:12px;
-    font-weight:900;
-}
-
-.checkout-button{
-    width:100%;
-    height:48px;
-    margin-top:12px;
-    border:0;
-    border-radius:12px;
-    background:#d71920;
-    color:white;
-    font-size:13px;
-    font-weight:800;
-}
-
-/* INVENTORY */
-
-.inventory-card{
-    padding:16px;
-    margin-bottom:10px;
-    background:white;
-    border-radius:16px;
-    box-shadow:0 5px 18px rgba(23,35,60,.05);
-}
-
-.inventory-top{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:10px;
-}
-
-.inventory-name{
-    font-size:13px;
-    font-weight:800;
-}
-
-.inventory-stock{
-    font-size:13px;
-    font-weight:900;
-}
-
-.stock-good{color:#16a34a}
-.stock-low{color:#ea580c}
-.stock-empty{color:#dc2626}
-
-.inventory-actions{
-    display:grid;
-    grid-template-columns:1fr 1fr 1fr;
-    gap:6px;
-    margin-top:12px;
-}
-
-.inventory-actions button{
-    height:36px;
-    border:0;
-    border-radius:9px;
-    font-size:11px;
-    font-weight:800;
-}
-
-.plus-stock{
-    background:#16a34a;
-    color:white;
-}
-
-.minus-stock{
-    background:#fff1f2;
-    color:#dc2626;
-}
-
-.delete-stock{
-    background:#f1f5f9;
-    color:#475569;
-}
-
-.empty-box{
-    padding:30px 15px;
-    background:white;
-    border-radius:17px;
-    text-align:center;
-    color:#8992a3;
-    font-size:12px;
-}
-
-/* BOTTOM NAV */
-
-.bottom-nav{
-    position:fixed;
-    right:0;
-    bottom:0;
-    left:0;
-    width:100%;
-    max-width:520px;
-    height:78px;
-    margin:auto;
-    z-index:30;
-    display:grid;
-    grid-template-columns:repeat(3,1fr);
-    padding:12px 8px 7px;
-    background:
-        linear-gradient(
-            to bottom,
-            rgba(245,247,248,0) 0%,
-            rgba(215,25,32,.20) 22%,
-            rgba(215,25,32,.75) 48%,
-            #d71920 72%,
-            #d71920 100%
-        );
-}
-
-.nav-item{
-    width:100%;
-    height:100%;
-    border:0;
-    background:transparent;
-    color:white;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    gap:4px;
-    padding:0;
-    font-size:11px;
-    font-weight:700;
-    opacity:.72;
-}
-
-.nav-item.active{
-    opacity:1;
-}
-
-.nav-icon{
-    width:22px;
-    height:22px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-}
-
-.simple-icon{
-    font-size:20px;
-    line-height:1;
-}
-
-/* MENU */
-
-.menu-overlay{
-    position:fixed;
-    inset:0;
-    z-index:200;
-    background:rgba(0,0,0,.35);
-    display:none;
-}
-
-.menu-overlay.show{
-    display:block;
-}
-
-.menu-box{
-    position:absolute;
-    top:64px;
-    right:12px;
-    width:205px;
-    padding:8px;
-    background:white;
-    border-radius:16px;
-    box-shadow:0 15px 40px rgba(0,0,0,.18);
-}
-
-.menu-item{
-    width:100%;
-    height:43px;
-    border:0;
-    border-radius:10px;
-    background:white;
-    color:#17233c;
-    text-align:right;
-    padding:0 13px;
-    font-size:12px;
-    font-weight:700;
-}
-
-.menu-item:active{
-    background:#f5f7f8;
-}
-
-/* TOAST */
-
-.toast{
-    position:fixed;
-    right:50%;
-    bottom:88px;
-    transform:translateX(50%) translateY(15px);
-    width:calc(100% - 30px);
-    max-width:480px;
-    padding:12px 15px;
-    border-radius:12px;
-    background:#17233c;
-    color:white;
-    text-align:center;
-    font-size:11px;
-    line-height:1.7;
-    opacity:0;
-    visibility:hidden;
-    z-index:300;
-    transition:.25s;
-}
-
-.toast.show{
-    opacity:1;
-    visibility:visible;
-    transform:translateX(50%) translateY(0);
-}
-
-.toast.error{background:#dc2626}
-.toast.success{background:#16a34a}
-
-.site-locked .bottom-nav{
-    opacity:.18;
-    pointer-events:none;
-}
-
-.site-locked .content{
-    pointer-events:none;
-    user-select:none;
-}
-
-.site-locked .menu-button{
-    pointer-events:none;
-}
-</style></head><body class="site-locked"><div class="app"><header class="header"><div class="header-top">
-
-    <button
-        id="menuButton"
-        class="menu-button"
-        type="button"
-        aria-label="منو"
-    >
-        <span class="menu-dots">⋮</span>
-    </button>
-
-    <div class="shop-name">
-        فروشگاه من
-    </div>
-
-    <div
-        id="connectionLight"
-        class="connection"
-        aria-label="وضعیت اتصال"
-    ></div>
-
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>BizadShop</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:#f5f7f8;color:#17233c;font-family:Tahoma,Arial,sans-serif}
+body{min-height:100vh}
+button,input,select{font:inherit}
+button{border:0;cursor:pointer}
+.app{width:100%;max-width:520px;margin:auto;min-height:100vh;background:#f5f7f8;position:relative}
+.header{height:154px;position:fixed;top:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;z-index:50;background:linear-gradient(180deg,#d92f38 0%,#e55b61 48%,rgba(245,247,248,0) 100%);padding:15px 15px 0}
+.header-top{height:45px;display:grid;grid-template-columns:45px 1fr 45px;align-items:center;direction:ltr}
+.connection{grid-column:1;display:flex;align-items:center;justify-content:flex-start}
+.connection-dot{width:13px;height:13px;border-radius:50%;background:#777;box-shadow:0 0 0 3px rgba(255,255,255,.22)}
+.connection-dot.connected{background:#20d26b}
+.menu-button{grid-column:3;width:42px;height:42px;background:rgba(255,255,255,.12);border-radius:12px;color:#fff;font-size:28px;line-height:38px}
+.shop-name{grid-column:2;text-align:center;color:#fff;font-size:19px;font-weight:bold;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.connect-button{display:block;margin:8px auto 0;background:rgba(255,255,255,.94);color:#17233c;border-radius:10px;padding:8px 18px;font-size:13px;box-shadow:0 4px 15px rgba(0,0,0,.1)}
+.connect-button.connected{color:#15964b}
+.content{padding:170px 14px 100px;min-height:100vh}
+.page{display:none}
+.page.active{display:block}
+.page-title{font-size:24px;font-weight:800;margin:0 0 18px}
+.lock-screen{position:fixed;inset:154px 0 0;z-index:40;background:#f5f7f8;display:flex;align-items:flex-start;justify-content:center;padding-top:65px;text-align:center}
+.lock-screen.hidden{display:none}
+.lock-box{background:#fff;border-radius:18px;padding:25px 20px;width:calc(100% - 35px);box-shadow:0 8px 30px rgba(0,0,0,.07)}
+.lock-box strong{display:block;font-size:18px;margin-bottom:8px}
+.lock-box span{font-size:13px;color:#777}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:15px}
+.stat-card,.add-product-card{background:#fff;border-radius:16px;padding:16px;min-height:110px;box-shadow:0 5px 20px rgba(23,35,60,.06)}
+.stat-title{font-size:12px;color:#777;margin-bottom:10px}
+.stat-value{font-size:19px;font-weight:800}
+.stat-sub{font-size:11px;color:#888;margin-top:8px}
+.stat-danger .stat-value,.stat-danger .stat-title{color:#d92f38}
+.add-product-card{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;cursor:pointer}
+.add-product-plus{font-size:45px;line-height:45px;color:#16a05a;font-weight:300}
+.add-product-text{font-size:13px;font-weight:bold;color:#17233c;margin-top:5px}
+.section{background:#fff;border-radius:17px;padding:16px;box-shadow:0 5px 20px rgba(23,35,60,.06);margin-bottom:14px}
+.section-title{font-weight:800;font-size:16px;margin-bottom:14px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.form-group{margin-bottom:11px}
+.form-group label{display:block;font-size:12px;margin-bottom:6px;color:#555}
+.form-control{width:100%;height:45px;border:1px solid #e1e4e8;border-radius:10px;background:#fff;padding:0 11px;outline:none;color:#17233c}
+.form-control:focus{border-color:#21a85e}
+.barcode-row{display:grid;grid-template-columns:1fr 45px;gap:7px}
+.scan-btn{height:45px;border-radius:10px;background:#17233c;color:#fff;font-size:20px}
+.primary-btn{width:100%;height:47px;border-radius:11px;background:#16a05a;color:#fff;font-weight:bold}
+.secondary-btn{height:42px;border-radius:10px;background:#eef1f3;color:#17233c;padding:0 15px}
+.sale-search{display:grid;grid-template-columns:1fr 45px;gap:7px}
+.product-card{margin-top:12px;background:#f7faf8;border:1px solid #e0eee5;border-radius:14px;padding:14px}
+.product-card.hidden{display:none}
+.product-name{font-size:17px;font-weight:bold;margin-bottom:8px}
+.product-meta{font-size:12px;color:#777;line-height:2}
+.product-price{font-size:20px;font-weight:800;color:#15964b;margin:7px 0}
+.sale-action{display:grid;grid-template-columns:80px 1fr;gap:8px;margin-top:10px}
+.qty-input{height:45px;border:1px solid #ddd;border-radius:10px;text-align:center;width:100%}
+.cart-list{display:flex;flex-direction:column;gap:9px}
+.cart-empty{text-align:center;color:#888;font-size:13px;padding:25px 5px}
+.cart-item{border:1px solid #e8eaed;border-radius:12px;padding:11px}
+.cart-top{display:flex;justify-content:space-between;gap:8px}
+.cart-name{font-weight:bold;font-size:14px}
+.remove-item{background:#ffe9ea;color:#d92f38;border-radius:8px;padding:4px 8px}
+.cart-details{display:flex;justify-content:space-between;color:#777;font-size:11px;margin-top:7px}
+.cart-total{display:flex;justify-content:space-between;border-top:1px solid #eee;margin-top:12px;padding-top:12px;font-weight:bold;font-size:17px}
+.checkout-btn{margin-top:12px}
+.inventory-list{display:flex;flex-direction:column;gap:10px}
+.inventory-item{background:#fff;border-radius:14px;padding:13px;box-shadow:0 4px 16px rgba(23,35,60,.05)}
+.inventory-head{display:flex;justify-content:space-between;gap:10px}
+.inventory-name{font-weight:bold;font-size:15px}
+.inventory-barcode{font-size:11px;color:#888;margin-top:5px}
+.inventory-stock{font-size:19px;font-weight:bold;margin-top:8px}
+.inventory-actions{display:flex;gap:7px;margin-top:10px}
+.stock-btn{width:43px;height:40px;border-radius:9px;background:#eef1f3;font-size:20px}
+.delete-btn{height:40px;padding:0 12px;border-radius:9px;background:#ffe9ea;color:#d92f38}
+.empty-state{text-align:center;color:#888;padding:30px 10px;font-size:13px}
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;height:72px;background:#fff;z-index:45;display:grid;grid-template-columns:1fr 1fr 1fr;border-top:1px solid #eee;box-shadow:0 -5px 20px rgba(0,0,0,.05);direction:rtl}
+.nav-btn{background:#fff;color:#888;font-size:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px}
+.nav-btn.active{color:#d92f38;font-weight:bold}
+.nav-icon{font-size:21px;line-height:20px}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:80;display:none;align-items:flex-end;justify-content:center}
+.overlay.open{display:flex}
+.modal{width:100%;max-width:520px;max-height:92vh;overflow:auto;background:#fff;border-radius:22px 22px 0 0;padding:18px 15px 25px}
+.modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:15px}
+.modal-title{font-size:18px;font-weight:800}
+.close-btn{width:38px;height:38px;border-radius:10px;background:#f1f3f5;color:#555;font-size:20px}
+.menu-overlay{align-items:flex-start;padding-top:70px}
+.menu-panel{width:calc(100% - 28px);max-width:490px;background:#fff;border-radius:17px;padding:8px;box-shadow:0 15px 45px rgba(0,0,0,.18)}
+.menu-item{width:100%;height:49px;background:#fff;border-radius:11px;text-align:right;padding:0 15px;color:#17233c}
+.menu-item:hover{background:#f5f7f8}
+.settings-item,.contact-box{font-size:13px;color:#555;line-height:2}
+.toast{position:fixed;left:50%;bottom:86px;transform:translateX(-50%) translateY(20px);background:#17233c;color:#fff;padding:11px 17px;border-radius:10px;font-size:12px;z-index:120;opacity:0;pointer-events:none;transition:.2s;max-width:90%;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.hidden{display:none!important}
+@media(max-width:360px){
+.stats{gap:8px}
+.stat-card,.add-product-card{padding:12px}
+}
+</style>
+</head>
+<body>
+<div class="app"><header class="header">
+<div class="header-top">
+<div class="connection"><span id="connectionLight" class="connection-dot"></span></div>
+<div id="shopName" class="shop-name">فروشگاه من</div>
+<button id="menuButton" class="menu-button" type="button">⋮</button>
 </div>
-
-<button
-    id="folderButton"
-    class="folder-button"
-    type="button"
->
-    اتصال به دیتابیس
+<button id="folderButton" class="connect-button" type="button">اتصال به دیتابیس</button>
+</header><div id="lockScreen" class="lock-screen">
+<div class="lock-box">
+<strong>لطفاً به دیتابیس متصل شوید</strong>
+<span>برای شروع کار، پوشه دیتابیس BizadShop را انتخاب کنید.</span>
+</div>
+</div><main class="content"><section id="homePage" class="page active">
+<h1 class="page-title">مدیریت فروشگاه</h1><div class="stats">
+<div class="stat-card">
+<div class="stat-title">فروش امروز</div>
+<div id="todaySales" class="stat-value">۰ تومان</div>
+<div id="todaySalesSub" class="stat-sub">بدون فروش</div>
+</div><div id="addProductCard" class="add-product-card">
+<div class="add-product-plus">+</div>
+<div class="add-product-text">ثبت کالا جدید</div>
+</div><div class="stat-card">
+<div class="stat-title">موجودی کالا</div>
+<div id="totalStock" class="stat-value">۰</div>
+<div class="stat-sub">تعداد موجودی</div>
+</div><div class="stat-card stat-danger">
+<div class="stat-title">کالاهای رو به اتمام</div>
+<div id="lowStock" class="stat-value">۰</div>
+<div class="stat-sub">نیاز به بررسی</div>
+</div>
+</div><div class="section">
+<div class="section-title">دسترسی سریع</div>
+<button id="homeSaleButton" class="primary-btn" type="button">ورود به فروش</button>
+</div>
+</section><section id="salePage" class="page">
+<h1 class="page-title">فروش</h1><div class="section">
+<div class="section-title">جستجوی کالا</div>
+<div class="sale-search">
+<input id="barcodeInput" class="form-control" inputmode="numeric" placeholder="بارکد کالا">
+<button id="scanButton" class="scan-btn" type="button">⌁</button>
+</div><div id="saleProductCard" class="product-card hidden">
+<div id="saleProductName" class="product-name"></div>
+<div id="saleProductBarcode" class="product-meta"></div>
+<div id="saleProductStock" class="product-meta"></div>
+<div id="saleProductPrice" class="product-price"></div>
+<div class="sale-action">
+<input id="saleQuantity" class="qty-input" type="number" min="1" value="1">
+<button id="saleAddButton" class="primary-btn" type="button">افزودن به فاکتور</button>
+</div>
+</div>
+</div><div class="section">
+<div class="section-title">فاکتور</div>
+<div id="selectedList" class="cart-list">
+<div class="cart-empty">هنوز کالایی به فاکتور اضافه نشده است.</div>
+</div>
+<div class="cart-total">
+<span>مجموع</span>
+<span id="saleTotal">۰ تومان</span>
+</div>
+<button id="checkoutButton" class="primary-btn checkout-btn" type="button">ثبت نهایی فاکتور</button>
+</div>
+</section><section id="inventoryPage" class="page">
+<h1 class="page-title">انبار</h1>
+<div id="inventoryList" class="inventory-list">
+<div class="empty-state">کالایی ثبت نشده است.</div>
+</div>
+</section><section id="settingsPage" class="page">
+<h1 class="page-title">تنظیمات</h1>
+<div class="section">
+<div class="section-title">تنظیمات فروشگاه</div>
+<div class="form-group">
+<label>نام فروشگاه</label>
+<input id="settingsShopName" class="form-control">
+</div>
+<div class="form-group">
+<label>واحد پول</label>
+<select id="settingsCurrency" class="form-control">
+<option value="تومان">تومان</option>
+<option value="ریال">ریال</option>
+</select>
+</div>
+<button id="saveSettingsButton" class="primary-btn" type="button">ذخیره تنظیمات</button>
+</div>
+</section><section id="contactPage" class="page">
+<h1 class="page-title">تماس با ما</h1>
+<div class="section contact-box">
+<div class="section-title">BizadShop</div>
+<div>برای پشتیبانی و ارتباط با ما می‌توانید از راه‌های ارتباطی تعریف‌شده توسط مدیر سیستم استفاده کنید.</div>
+</div>
+</section></main><nav class="bottom-nav">
+<button class="nav-btn" data-page="salePage" type="button">
+<span class="nav-icon">🛒</span><span>فروش</span>
 </button>
-
-</header><section id="lockScreen" class="lock-screen"><div class="lock-box">
-
-    <div class="lock-icon"></div>
-
-    <h1 class="lock-title">
-        لطفاً به دیتابیس متصل شوید
-    </h1>
-
-    <p class="lock-text">
-        برای استفاده از فروشگاه ابتدا پوشه دیتابیس
-        را از حافظه گوشی انتخاب کنید.
-    </p>
-
-    <button
-        id="connectButton"
-        class="connect-button"
-        type="button"
-    >
-        اتصال به دیتابیس
-    </button>
-
+<button class="nav-btn active" data-page="homePage" type="button">
+<span class="nav-icon">⌂</span><span>خانه</span>
+</button>
+<button class="nav-btn" data-page="inventoryPage" type="button">
+<span class="nav-icon">▤</span><span>انبار</span>
+</button>
+</nav></div><div id="menuOverlay" class="overlay menu-overlay">
+<div class="menu-panel">
+<button class="menu-item" data-page="homePage" type="button">خانه</button>
+<button class="menu-item" data-page="salePage" type="button">فروش</button>
+<button class="menu-item" data-page="inventoryPage" type="button">انبار</button>
+<button class="menu-item" data-page="settingsPage" type="button">تنظیمات</button>
+<button class="menu-item" data-page="contactPage" type="button">تماس با ما</button>
 </div>
-
-</section><main class="content"><!-- HOME --><section id="homePage" class="page active"><h1 class="page-title">
-    مدیریت فروشگاه
-</h1>
-
-<div class="stats-grid">
-
-    <div class="stat-card">
-        <div class="stat-label">فروش امروز</div>
-        <div id="todaySales" class="stat-value">۰</div>
-        <div class="stat-change up">امروز</div>
-    </div>
-
-    <div
-        id="newProductCard"
-        class="stat-card clickable add-product-card"
-    >
-        <div class="big-plus">+</div>
-        <div class="stat-label">ثبت کالا جدید</div>
-    </div>
-
-    <div class="stat-card">
-        <div class="stat-label">موجودی کالا</div>
-        <div id="totalStock" class="stat-value">۰</div>
-        <div class="stat-change info">تعداد کل</div>
-    </div>
-
-    <div class="stat-card">
-        <div class="stat-label">کالاهای رو به اتمام</div>
-        <div id="lowStockCount" class="stat-value">۰</div>
-        <div class="stat-change warning">نیاز به بررسی</div>
-    </div>
-
-</div>
-
-</section><!-- NEW PRODUCT --><section id="newProductPage" class="page"><h1 class="page-title">
-    ثبت کالا جدید
-</h1>
-
-<div class="form-card">
-
-    <div class="form-group">
-
-        <label class="form-label">
-            بارکد
-        </label>
-
-        <div class="barcode-form-row">
-
-            <input
-                id="newBarcode"
-                class="form-input"
-                type="text"
-                inputmode="numeric"
-                autocomplete="off"
-                placeholder="بارکد را دستی وارد کنید"
-            >
-
-            <button
-                id="newBarcodeScan"
-                class="small-scan"
-                type="button"
-            >
-                <span class="barcode-symbol"></span>
-            </button>
-
-        </div>
-
-    </div>
-
-    <div class="form-group">
-
-        <label class="form-label">
-            نام کالا
-        </label>
-
-        <input
-            id="newName"
-            class="form-input"
-            type="text"
-            placeholder="نام کالا"
-        >
-
-    </div>
-
-    <div class="form-group">
-
-        <label class="form-label">
-            دسته‌بندی
-        </label>
-
-        <select id="newCategory" class="form-select">
-
-            <option value="نوشیدنی">نوشیدنی</option>
-            <option value="خواروبار">خواروبار</option>
-            <option value="یخچالی">یخچالی</option>
-            <option value="تنقلات">تنقلات</option>
-            <option value="بهداشتی">بهداشتی</option>
-            <option value="شوینده">شوینده</option>
-            <option value="مواد پروتئینی">مواد پروتئینی</option>
-            <option value="سایر">سایر</option>
-
-        </select>
-
-    </div>
-
-    <div class="form-row">
-
-        <div class="form-group">
-
-            <label class="form-label">
-                قیمت خرید
-            </label>
-
-            <input
-                id="purchasePrice"
-                class="form-input"
-                type="number"
-                min="0"
-                placeholder="تومان"
-            >
-
-        </div>
-
-        <div class="form-group">
-
-            <label class="form-label">
-                قیمت فروش
-            </label>
-
-            <input
-                id="salePrice"
-                class="form-input"
-                type="number"
-                min="0"
-                placeholder="تومان"
-            >
-
-        </div>
-
-    </div>
-
-    <div class="form-row">
-
-        <div class="form-group">
-
-            <label class="form-label">
-                واحد
-            </label>
-
-            <select id="newUnit" class="form-select">
-
-                <option value="عدد">عدد</option>
-                <option value="کیلو">کیلو</option>
-                <option value="گرم">گرم</option>
-                <option value="کارتن">کارتن</option>
-                <option value="بسته">بسته</option>
-                <option value="بطری">بطری</option>
-                <option value="لیتر">لیتر</option>
-                <option value="متر">متر</option>
-                <option value="سایر">سایر</option>
-
-            </select>
-
-        </div>
-
-        <div class="form-group">
-
-            <label class="form-label">
-                تعداد اولیه
-            </label>
-
-            <input
-                id="newQuantity"
-                class="form-input"
-                type="number"
-                min="0"
-                value="0"
-                placeholder="تعداد"
-            >
-
-        </div>
-
-    </div>
-
-    <button
-        id="saveProductButton"
-        class="save-button"
-        type="button"
-    >
-        ثبت کالا
-    </button>
-
-    <button
-        id="cancelProductButton"
-        class="cancel-button"
-        type="button"
-    >
-        انصراف
-    </button>
-
-</div>
-
-</section><!-- SALE --><section id="salePage" class="page"><h1 class="page-title">
-    فروش
-</h1>
-
+</div><div id="productOverlay" class="overlay">
+<div class="modal">
+<div class="modal-head">
+<div class="modal-title">ثبت کالا جدید</div>
+<button id="productClose" class="close-btn" type="button">×</button>
+</div><div class="form-group">
+<label>بارکد</label>
 <div class="barcode-row">
-
-    <input
-        id="barcodeInput"
-        class="barcode-input"
-        type="text"
-        inputmode="numeric"
-        autocomplete="off"
-        placeholder="بارکد کالا..."
-    >
-
-    <button
-        id="scanButton"
-        class="scan-button"
-        type="button"
-    >
-        <span class="barcode-symbol"></span>
-    </button>
+<input id="productBarcode" class="form-control" inputmode="numeric" placeholder="بارکد کالا">
+<button id="productScanButton" class="scan-btn" type="button">⌁</button>
+</div>
+</div><div class="form-group">
+<label>نام کالا</label>
+<input id="productName" class="form-control" placeholder="نام کالا">
+</div><div class="form-group">
+<label>دسته بندی</label>
+<select id="productCategory" class="form-control">
+<option value="نوشیدنی">نوشیدنی</option>
+<option value="خواربار">خواربار</option>
+<option value="یخچالی">یخچالی</option>
+<option value="تنقلات">تنقلات</option>
+<option value="شوینده">شوینده</option>
+<option value="بهداشتی">بهداشتی</option>
+<option value="لوازم مصرفی">لوازم مصرفی</option>
+<option value="سایر">سایر</option>
+</select>
+</div><div class="form-row">
+<div class="form-group">
+<label>قیمت خرید</label>
+<input id="productPurchasePrice" class="form-control" inputmode="decimal" type="number" min="0">
+</div>
+<div class="form-group">
+<label>قیمت فروش</label>
+<input id="productSalePrice" class="form-control" inputmode="decimal" type="number" min="0">
+</div>
+</div><div class="form-row">
+<div class="form-group">
+<label>واحد</label>
+<select id="productUnit" class="form-control">
+<option value="عدد">عدد</option>
+<option value="کیلو">کیلو</option>
+<option value="گرم">گرم</option>
+<option value="لیتر">لیتر</option>
+<option value="میلی‌لیتر">میلی‌لیتر</option>
+<option value="کارتن">کارتن</option>
+<option value="بسته">بسته</option>
+<option value="بطری">بطری</option>
+<option value="قوطی">قوطی</option>
+<option value="متر">متر</option>
+</select>
+</div>
+<div class="form-group">
+<label>تعداد</label>
+<input id="productQuantity" class="form-control" type="number" min="0" value="0">
+</div>
+</div><button id="productSubmit" class="primary-btn" type="button">ثبت</button>
 
 </div>
-
-<div id="saleProductArea"></div>
-
-<h2 class="section-title">
-    کالاهای انتخاب‌شده
-</h2>
-
-<div
-    id="selectedList"
-    class="selected-list"
-></div>
-
-<button
-    id="checkoutButton"
-    class="checkout-button"
-    type="button"
->
-    ثبت فاکتور فروش
-</button>
-
-</section><!-- INVENTORY --><section id="inventoryPage" class="page"><h1 class="page-title">
-    انبار
-</h1>
-
-<div id="inventoryList"></div>
-
-</section><!-- SETTINGS --><section id="settingsPage" class="page"><h1 class="page-title">
-    تنظیمات
-</h1>
-
-<div class="form-card">
-
-    <div class="form-group">
-        <label class="form-label">نام فروشگاه</label>
-        <input
-            id="shopNameInput"
-            class="form-input"
-            type="text"
-            value="فروشگاه من"
-        >
-    </div>
-
-    <button
-        id="saveSettingsButton"
-        class="save-button"
-        type="button"
-    >
-        ذخیره تنظیمات
-    </button>
-
-</div>
-
-</section><!-- CONTACT --><section id="contactPage" class="page"><h1 class="page-title">
-    تماس با ما
-</h1>
-
-<div class="form-card">
-
-    <p style="font-size:12px;line-height:2;color:#697386;margin:0;">
-        برای پشتیبانی و ارتباط با تیم BizadShop
-        از راه‌های ارتباطی تعیین‌شده استفاده کنید.
-    </p>
-
-</div>
-
-</section></main><nav id="bottomNav" class="bottom-nav"><button
-    class="nav-item active"
-    data-page="salePage"
-    type="button"
->
-    <span class="nav-icon">
-        <span class="simple-icon">▣</span>
-    </span>
-    <span>فروش</span>
-</button>
-
-<button
-    class="nav-item"
-    data-page="homePage"
-    type="button"
->
-    <span class="nav-icon">
-        <span class="simple-icon">⌂</span>
-    </span>
-    <span>خانه</span>
-</button>
-
-<button
-    class="nav-item"
-    data-page="inventoryPage"
-    type="button"
->
-    <span class="nav-icon">
-        <span class="simple-icon">▤</span>
-    </span>
-    <span>انبار</span>
-</button>
-
-</nav><!-- MENU --><div id="menuOverlay" class="menu-overlay"><div class="menu-box">
-
-    <button
-        class="menu-item"
-        data-menu-page="homePage"
-        type="button"
-    >
-        خانه
-    </button>
-
-    <button
-        class="menu-item"
-        data-menu-page="salePage"
-        type="button"
-    >
-        فروش
-    </button>
-
-    <button
-        class="menu-item"
-        data-menu-page="inventoryPage"
-        type="button"
-    >
-        انبار
-    </button>
-
-    <button
-        class="menu-item"
-        data-menu-page="settingsPage"
-        type="button"
-    >
-        تنظیمات
-    </button>
-
-    <button
-        class="menu-item"
-        data-menu-page="contactPage"
-        type="button"
-    >
-        تماس با ما
-    </button>
-
-</div>
-
-</div><div id="toast" class="toast"></div></div><script src="main.js"></script></body>
+</div><div id="toast" class="toast"></div><script src="main.js"></script></body>
     </html>
