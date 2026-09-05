@@ -21,12 +21,1326 @@
 
     <title>Bizadshop</title>
 
-    <link rel="stylesheet" href="style.css">
+    <style>
+
+        /* ============================================================
+           BIZADSHOP — MAIN UI
+           CSS داخلی — فایل style.css دیگر لازم نیست
+           ============================================================ */
+
+        :root {
+            --primary: #0879e6;
+            --primary-dark: #0564c0;
+            --primary-light: #e8f1ff;
+
+            --background: #f4f7fb;
+            --surface: #ffffff;
+            --surface-2: #f8fafc;
+
+            --text: #172033;
+            --text-light: #64748b;
+            --border: #e2e8f0;
+
+            --success: #16a34a;
+            --danger: #dc2626;
+            --warning: #f59e0b;
+
+            --radius: 16px;
+            --shadow: 0 6px 24px rgba(15, 23, 42, .07);
+        }
+
+
+        /* ================= RESET ================= */
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            width: 100%;
+            min-height: 100%;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            width: 100%;
+            min-height: 100vh;
+            background: var(--background);
+            color: var(--text);
+            font-family:
+                Tahoma,
+                Arial,
+                sans-serif;
+            line-height: 1.6;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        button,
+        input,
+        select,
+        textarea {
+            font-family: inherit;
+        }
+
+        button {
+            border: 0;
+        }
+
+        input,
+        select,
+        textarea {
+            outline: none;
+        }
+
+        button,
+        input,
+        select {
+            touch-action: manipulation;
+        }
+
+
+        /* ================= APP ================= */
+
+        .app {
+            width: 100%;
+            min-height: 100vh;
+            padding-bottom: 84px;
+        }
+
+
+        /* ================= HEADER ================= */
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            min-height: 74px;
+            padding: 12px 16px;
+
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+
+            box-shadow:
+                0 2px 12px rgba(15, 23, 42, .05);
+        }
+
+        .brand-area {
+            min-width: 0;
+        }
+
+        .brand-area h1 {
+            color: var(--primary);
+            font-size: 21px;
+            line-height: 1.2;
+            font-weight: 900;
+        }
+
+        .brand-area > span {
+            display: block;
+            margin-top: 2px;
+            color: var(--text-light);
+            font-size: 11px;
+        }
+
+        .connection-status {
+            margin-top: 4px;
+            color: var(--text-light);
+            font-size: 10px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 230px;
+        }
+
+        .icon-button {
+            width: 44px;
+            height: 44px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            border-radius: 13px;
+            background: var(--primary-light);
+            color: var(--primary);
+
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .icon-button:active {
+            transform: scale(.96);
+        }
+
+
+        /* ================= NAVIGATION ================= */
+
+        .navigation {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 1000;
+
+            display: flex;
+            align-items: stretch;
+            justify-content: space-around;
+
+            height: 74px;
+
+            background: rgba(255,255,255,.97);
+            border-top: 1px solid var(--border);
+
+            box-shadow:
+                0 -5px 20px rgba(15,23,42,.08);
+
+            padding-bottom:
+                env(safe-area-inset-bottom);
+        }
+
+        .nav-btn {
+            flex: 1;
+
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+
+            gap: 2px;
+
+            background: transparent;
+            color: #64748b;
+
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        .nav-btn span {
+            font-size: 21px;
+            line-height: 1;
+        }
+
+        .nav-btn small {
+            font-size: 10px;
+        }
+
+        .nav-btn.active {
+            color: var(--primary);
+            font-weight: 800;
+        }
+
+
+        /* ================= CONTENT ================= */
+
+        .content {
+            width: 100%;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 18px 14px;
+        }
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+
+        /* ================= PAGE TITLE ================= */
+
+        .page-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            gap: 12px;
+
+            margin-bottom: 18px;
+        }
+
+        .page-title h2 {
+            font-size: 22px;
+            line-height: 1.3;
+            font-weight: 900;
+        }
+
+        .page-title p {
+            margin-top: 3px;
+            color: var(--text-light);
+            font-size: 12px;
+        }
+
+
+        /* ================= BUTTONS ================= */
+
+        .primary-button,
+        .secondary-button {
+            min-height: 44px;
+            padding: 0 16px;
+
+            border-radius: 12px;
+
+            font-size: 13px;
+            font-weight: 800;
+
+            cursor: pointer;
+        }
+
+        .primary-button {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .primary-button:active {
+            background: var(--primary-dark);
+            transform: scale(.98);
+        }
+
+        .secondary-button {
+            background: #eef2f7;
+            color: var(--text);
+        }
+
+
+        /* ================= STATS ================= */
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .stat-card {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+
+            min-height: 92px;
+            padding: 13px;
+
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+
+            box-shadow: var(--shadow);
+        }
+
+        .stat-icon {
+            width: 42px;
+            height: 42px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            flex: 0 0 42px;
+
+            border-radius: 12px;
+            background: var(--primary-light);
+
+            font-size: 20px;
+        }
+
+        .stat-card small {
+            display: block;
+            color: var(--text-light);
+            font-size: 10px;
+        }
+
+        .stat-card strong {
+            display: block;
+            margin-top: 2px;
+            font-size: 17px;
+        }
+
+
+        /* ================= DASHBOARD ACTIONS ================= */
+
+        .dashboard-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .big-action {
+            min-height: 120px;
+            padding: 15px;
+
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: center;
+
+            text-align: right;
+
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+
+            background: var(--surface);
+
+            box-shadow: var(--shadow);
+
+            cursor: pointer;
+        }
+
+        .big-action span {
+            font-size: 25px;
+            margin-bottom: 7px;
+        }
+
+        .big-action strong {
+            font-size: 14px;
+        }
+
+        .big-action small {
+            margin-top: 2px;
+            color: var(--text-light);
+            font-size: 10px;
+        }
+
+        .big-action.primary {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #fff;
+        }
+
+        .big-action.primary small {
+            color: rgba(255,255,255,.8);
+        }
+
+
+        /* ================= CARDS ================= */
+
+        .section-card {
+            margin-bottom: 14px;
+            padding: 15px;
+
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+
+            box-shadow: var(--shadow);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            gap: 10px;
+
+            margin-bottom: 12px;
+        }
+
+        .section-header h3 {
+            font-size: 14px;
+        }
+
+        .section-header button {
+            background: transparent;
+            color: var(--primary);
+            font-size: 11px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+
+        /* ================= SEARCH ================= */
+
+        .search-box {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+
+            min-height: 48px;
+            margin-bottom: 12px;
+            padding: 0 13px;
+
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 13px;
+        }
+
+        .search-box span {
+            font-size: 17px;
+        }
+
+        .search-box input {
+            width: 100%;
+            min-width: 0;
+
+            border: 0;
+            background: transparent;
+
+            color: var(--text);
+            font-size: 13px;
+        }
+
+        .search-box input::placeholder {
+            color: #94a3b8;
+        }
+
+
+        /* ================= PRODUCTS ================= */
+
+        #productsList,
+        #inventoryList,
+        #saleSearchResults,
+        #lowStockList {
+            display: flex;
+            flex-direction: column;
+            gap: 9px;
+        }
+
+        .product-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            gap: 10px;
+
+            padding: 13px;
+
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+        }
+
+        .product-info {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .product-info strong {
+            display: block;
+
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+
+            font-size: 13px;
+        }
+
+        .product-info small {
+            display: block;
+            margin-top: 2px;
+            color: var(--text-light);
+            font-size: 10px;
+        }
+
+        .product-price {
+            margin-top: 4px;
+            color: var(--primary);
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .product-stock {
+            color: var(--text-light);
+            font-size: 11px;
+            white-space: nowrap;
+        }
+
+        .product-actions {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .small-button {
+            min-height: 36px;
+            padding: 0 9px;
+
+            border-radius: 9px;
+
+            background: #eef2f7;
+            color: var(--text);
+
+            font-size: 11px;
+            font-weight: 700;
+
+            cursor: pointer;
+        }
+
+        .small-button.primary {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+
+        .small-button.danger {
+            background: #fee2e2;
+            color: var(--danger);
+        }
+
+
+        /* ================= SALE ================= */
+
+        .sale-search {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .sale-search input {
+            flex: 1;
+            min-width: 0;
+
+            min-height: 48px;
+            padding: 0 13px;
+
+            border: 1px solid var(--border);
+            border-radius: 13px;
+
+            background: var(--surface);
+
+            font-size: 13px;
+        }
+
+        .sale-search button {
+            min-height: 48px;
+            padding: 0 14px;
+
+            border-radius: 13px;
+
+            background: var(--primary);
+            color: #fff;
+
+            font-size: 12px;
+            font-weight: 800;
+
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .cart-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            gap: 10px;
+
+            padding: 11px 0;
+
+            border-bottom: 1px solid var(--border);
+        }
+
+        .cart-item:last-child {
+            border-bottom: 0;
+        }
+
+        .cart-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .cart-info strong {
+            display: block;
+            font-size: 12px;
+        }
+
+        .cart-info small {
+            display: block;
+            margin-top: 2px;
+            color: var(--text-light);
+            font-size: 10px;
+        }
+
+        .cart-controls {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .cart-controls button {
+            width: 30px;
+            height: 30px;
+
+            border-radius: 8px;
+
+            background: #eef2f7;
+            color: var(--text);
+
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .cart-quantity {
+            min-width: 25px;
+            text-align: center;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .sale-total {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            margin-top: 14px;
+            padding-top: 13px;
+
+            border-top: 1px solid var(--border);
+        }
+
+        .sale-total span {
+            color: var(--text-light);
+            font-size: 12px;
+        }
+
+        .sale-total strong {
+            color: var(--primary);
+            font-size: 17px;
+        }
+
+        .checkout-button {
+            width: 100%;
+            min-height: 50px;
+
+            margin-top: 13px;
+
+            border-radius: 13px;
+
+            background: var(--primary);
+            color: #fff;
+
+            font-size: 14px;
+            font-weight: 900;
+
+            cursor: pointer;
+        }
+
+        .checkout-button:active {
+            background: var(--primary-dark);
+        }
+
+
+        /* ================= INVENTORY ================= */
+
+        .inventory-summary {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+
+            gap: 10px;
+
+            margin-bottom: 13px;
+        }
+
+        .inventory-summary > div {
+            padding: 14px;
+
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+
+            box-shadow: var(--shadow);
+        }
+
+        .inventory-summary small {
+            display: block;
+            color: var(--text-light);
+            font-size: 10px;
+        }
+
+        .inventory-summary strong {
+            display: block;
+            margin-top: 3px;
+            font-size: 18px;
+        }
+
+
+        /* ================= EMPTY ================= */
+
+        .empty {
+            padding: 25px 15px;
+
+            text-align: center;
+
+            color: var(--text-light);
+            font-size: 12px;
+
+            background: var(--surface-2);
+            border: 1px dashed var(--border);
+            border-radius: 13px;
+        }
+
+
+        /* ================= MODAL ================= */
+
+        .modal {
+            position: fixed;
+            inset: 0;
+
+            z-index: 2000;
+
+            display: none;
+            align-items: center;
+            justify-content: center;
+
+            padding: 14px;
+
+            background: rgba(2, 20, 50, .62);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal.open {
+            display: flex;
+        }
+
+        .modal-box {
+            width: min(100%, 520px);
+            max-height: 92vh;
+
+            overflow-y: auto;
+
+            padding: 17px;
+
+            background: var(--surface);
+            border-radius: 20px;
+
+            box-shadow:
+                0 25px 70px rgba(0,0,0,.25);
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            gap: 10px;
+
+            margin-bottom: 17px;
+        }
+
+        .modal-header h3 {
+            font-size: 17px;
+        }
+
+        .close-button {
+            width: 40px;
+            height: 40px;
+
+            border-radius: 11px;
+
+            background: #eef2f7;
+            color: var(--text);
+
+            font-size: 25px;
+            line-height: 1;
+
+            cursor: pointer;
+        }
+
+        .modal-product-name {
+            margin-bottom: 14px;
+            padding: 11px;
+
+            background: var(--primary-light);
+            color: var(--primary);
+
+            border-radius: 11px;
+
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+        form label {
+            display: block;
+
+            margin-bottom: 13px;
+
+            color: var(--text);
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        form input,
+        form select {
+            width: 100%;
+            min-height: 46px;
+
+            margin-top: 6px;
+            padding: 0 12px;
+
+            border: 1px solid var(--border);
+            border-radius: 11px;
+
+            background: #fff;
+            color: var(--text);
+
+            font-size: 13px;
+        }
+
+        form input:focus,
+        form select:focus {
+            border-color: var(--primary);
+
+            box-shadow:
+                0 0 0 3px rgba(8,121,230,.1);
+        }
+
+        .two-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 8px;
+
+            margin-top: 8px;
+        }
+
+        .form-actions button {
+            flex: 1;
+        }
+
+
+        /* ================= BARCODE ================= */
+
+        .barcode-field {
+            margin-bottom: 13px;
+        }
+
+        .barcode-input-row {
+            display: flex;
+            align-items: stretch;
+
+            gap: 8px;
+
+            width: 100%;
+        }
+
+        .barcode-input-row input {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .barcode-scan-btn,
+        .barcode-manual-btn {
+            border: 0;
+            border-radius: 12px;
+
+            min-height: 46px;
+
+            padding: 0 14px;
+
+            font: inherit;
+            font-weight: 700;
+
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+
+        .barcode-scan-btn {
+            background: #0b5ed7;
+            color: #fff;
+
+            white-space: nowrap;
+        }
+
+        .barcode-hint {
+            display: block;
+
+            margin-top: 7px;
+
+            color: #64748b;
+
+            font-size: 12px;
+            line-height: 1.7;
+        }
+
+
+        /* ================= BARCODE SCANNER ================= */
+
+        .barcode-scanner-modal {
+            position: fixed;
+            inset: 0;
+
+            z-index: 99999;
+
+            display: none;
+
+            align-items: center;
+            justify-content: center;
+
+            padding: 16px;
+
+            background: rgba(2,20,50,.72);
+
+            backdrop-filter: blur(6px);
+        }
+
+        .barcode-scanner-modal.open {
+            display: flex;
+        }
+
+        .barcode-scanner-card {
+            width: min(100%, 520px);
+
+            overflow: hidden;
+
+            border-radius: 22px;
+
+            background: #fff;
+
+            box-shadow:
+                0 24px 70px rgba(0,0,0,.3);
+        }
+
+        .barcode-scanner-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            gap: 12px;
+
+            padding: 16px 18px;
+
+            background: #0b5ed7;
+            color: #fff;
+        }
+
+        .barcode-scanner-header h3 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+        .barcode-scanner-header p {
+            margin: 4px 0 0;
+
+            font-size: 12px;
+            opacity: .88;
+        }
+
+        .barcode-close-btn {
+            width: 42px;
+            height: 42px;
+            flex: 0 0 42px;
+
+            border: 0;
+            border-radius: 12px;
+
+            background: rgba(255,255,255,.16);
+            color: #fff;
+
+            font-size: 28px;
+            line-height: 1;
+
+            cursor: pointer;
+        }
+
+        .barcode-camera-wrap {
+            position: relative;
+
+            width: 100%;
+            aspect-ratio: 4 / 3;
+
+            overflow: hidden;
+
+            background: #071426;
+        }
+
+        #barcodeVideo {
+            width: 100%;
+            height: 100%;
+
+            display: block;
+
+            object-fit: cover;
+        }
+
+        .barcode-target {
+            position: absolute;
+
+            inset: 18% 10%;
+
+            border: 2px solid rgba(255,255,255,.9);
+            border-radius: 14px;
+
+            box-shadow:
+                0 0 0 999px rgba(0,0,0,.18);
+
+            pointer-events: none;
+        }
+
+        .barcode-target::before,
+        .barcode-target::after,
+        .barcode-target span::before,
+        .barcode-target span::after {
+            content: "";
+
+            position: absolute;
+
+            width: 26px;
+            height: 26px;
+
+            border-color: #fff;
+            border-style: solid;
+        }
+
+        .barcode-target::before {
+            top: -2px;
+            right: -2px;
+
+            border-width: 3px 3px 0 0;
+        }
+
+        .barcode-target::after {
+            top: -2px;
+            left: -2px;
+
+            border-width: 3px 0 0 3px;
+        }
+
+        .barcode-target span::before {
+            bottom: -2px;
+            right: -2px;
+
+            border-width: 0 3px 3px 0;
+        }
+
+        .barcode-target span::after {
+            bottom: -2px;
+            left: -2px;
+
+            border-width: 0 0 3px 3px;
+        }
+
+        .barcode-scanner-status {
+            min-height: 48px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            padding: 10px 16px;
+
+            text-align: center;
+
+            color: #334155;
+
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .barcode-manual-btn {
+            display: block;
+
+            width: calc(100% - 32px);
+
+            margin: 0 16px 16px;
+
+            background: #e8f1ff;
+            color: #0b5ed7;
+        }
+
+
+        /* ================= TOAST ================= */
+
+        .toast {
+            position: fixed;
+
+            left: 50%;
+            bottom: 90px;
+
+            z-index: 10000;
+
+            max-width: calc(100% - 30px);
+
+            padding: 11px 16px;
+
+            border-radius: 12px;
+
+            background: #172033;
+            color: #fff;
+
+            font-size: 12px;
+            text-align: center;
+
+            opacity: 0;
+            visibility: hidden;
+
+            transform:
+                translate(-50%, 15px);
+
+            transition:
+                opacity .2s ease,
+                transform .2s ease,
+                visibility .2s ease;
+        }
+
+        .toast.show {
+            opacity: 1;
+            visibility: visible;
+
+            transform:
+                translate(-50%, 0);
+        }
+
+
+        /* ================= SCROLLBAR ================= */
+
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 20px;
+        }
+
+
+        /* ================= TABLET ================= */
+
+        @media (min-width: 600px) {
+
+            .content {
+                padding: 24px 20px;
+            }
+
+            .stats-grid {
+                grid-template-columns:
+                    repeat(4, 1fr);
+            }
+
+            .dashboard-actions {
+                grid-template-columns:
+                    repeat(2, 1fr);
+            }
+
+        }
+
+
+        /* ================= DESKTOP ================= */
+
+        @media (min-width: 900px) {
+
+            .app {
+                padding-bottom: 0;
+            }
+
+            .navigation {
+                position: sticky;
+
+                top: 74px;
+                bottom: auto;
+
+                height: 58px;
+
+                border-top: 0;
+                border-bottom: 1px solid var(--border);
+
+                box-shadow:
+                    0 2px 12px rgba(15,23,42,.04);
+            }
+
+            .nav-btn {
+                flex-direction: row;
+
+                gap: 7px;
+
+                font-size: 12px;
+            }
+
+            .nav-btn span {
+                font-size: 17px;
+            }
+
+            .nav-btn small {
+                font-size: 11px;
+            }
+
+            .content {
+                padding-top: 28px;
+            }
+
+        }
+
+
+        /* ================= MOBILE ================= */
+
+        @media (max-width: 420px) {
+
+            .content {
+                padding-left: 10px;
+                padding-right: 10px;
+            }
+
+            .page-title h2 {
+                font-size: 20px;
+            }
+
+            .primary-button {
+                padding-left: 12px;
+                padding-right: 12px;
+                font-size: 12px;
+            }
+
+            .barcode-input-row {
+                gap: 6px;
+            }
+
+            .barcode-scan-btn {
+                padding: 0 10px;
+                font-size: 13px;
+            }
+
+            .barcode-scanner-modal {
+                padding: 10px;
+            }
+
+            .barcode-scanner-card {
+                border-radius: 18px;
+            }
+
+        }
+
+
+        /* ================= ACCESSIBILITY ================= */
+
+        button:focus-visible,
+        input:focus-visible,
+        select:focus-visible {
+            outline: 3px solid rgba(8,121,230,.22);
+            outline-offset: 1px;
+        }
+
+
+        /* ================= REDUCED MOTION ================= */
+
+        @media (prefers-reduced-motion: reduce) {
+
+            *,
+            *::before,
+            *::after {
+                scroll-behavior: auto !important;
+                transition: none !important;
+                animation: none !important;
+            }
+
+        }
+
+    </style>
 </head>
+
 
 <body>
 
 <div class="app">
+
 
     <!-- ================= HEADER ================= -->
 
@@ -46,6 +1360,7 @@
             </div>
 
         </div>
+
 
         <button
             class="icon-button"
@@ -72,6 +1387,7 @@
             <small>خانه</small>
         </button>
 
+
         <button
             class="nav-btn"
             data-page="products"
@@ -81,6 +1397,7 @@
             <small>کالاها</small>
         </button>
 
+
         <button
             class="nav-btn"
             data-page="sale"
@@ -89,6 +1406,7 @@
             <span>🧾</span>
             <small>فروش</small>
         </button>
+
 
         <button
             class="nav-btn"
@@ -217,10 +1535,13 @@
 
                 </div>
 
+
                 <div id="lowStockList">
+
                     <div class="empty">
                         در حال بارگذاری...
                     </div>
+
                 </div>
 
             </div>
@@ -241,6 +1562,7 @@
                     <h2>کالاها</h2>
                     <p>مدیریت کالاهای فروشگاه</p>
                 </div>
+
 
                 <button
                     class="primary-button"
@@ -303,6 +1625,7 @@
                     placeholder="بارکد یا نام کالا..."
                     autocomplete="off"
                 >
+
 
                 <button
                     id="scanBarcodeBtn"
@@ -390,6 +1713,7 @@
                     <strong id="inventoryProductCount">0</strong>
                 </div>
 
+
                 <div>
                     <small>مجموع موجودی</small>
                     <strong id="inventoryTotalStock">0</strong>
@@ -440,6 +1764,7 @@
                     افزودن کالا
                 </h3>
 
+
                 <button
                     class="close-button"
                     data-close-modal="productModal"
@@ -460,9 +1785,11 @@
 
 
                 <label class="barcode-field">
+
                     بارکد
 
                     <div class="barcode-input-row">
+
                         <input
                             id="productBarcode"
                             type="text"
@@ -473,18 +1800,27 @@
                             required
                         >
 
+
                         <button
                             id="productScanBarcodeBtn"
                             class="barcode-scan-btn"
                             type="button"
-                        >📷 اسکن</button>
+                        >
+                            📷 اسکن
+                        </button>
+
                     </div>
 
-                    <small class="barcode-hint">می‌توانید بارکد را دستی وارد کنید یا با دوربین اسکن کنید.</small>
+
+                    <small class="barcode-hint">
+                        می‌توانید بارکد را دستی وارد کنید یا با دوربین اسکن کنید.
+                    </small>
+
                 </label>
 
 
                 <label>
+
                     نام کالا
 
                     <input
@@ -498,6 +1834,7 @@
 
 
                 <label>
+
                     دسته‌بندی
 
                     <input
@@ -512,6 +1849,7 @@
                 <div class="two-columns">
 
                     <label>
+
                         قیمت خرید
 
                         <input
@@ -526,6 +1864,7 @@
 
 
                     <label>
+
                         قیمت فروش
 
                         <input
@@ -545,6 +1884,7 @@
                 <div class="two-columns">
 
                     <label>
+
                         واحد
 
                         <select id="productUnit">
@@ -562,6 +1902,7 @@
 
 
                     <label>
+
                         موجودی اولیه
 
                         <input
@@ -586,6 +1927,7 @@
                     >
                         انصراف
                     </button>
+
 
                     <button
                         type="submit"
@@ -616,6 +1958,7 @@
 
                 <h3>تغییر موجودی</h3>
 
+
                 <button
                     class="close-button"
                     data-close-modal="stockModal"
@@ -642,6 +1985,7 @@
 
 
                 <label>
+
                     نوع عملیات
 
                     <select id="stockAction">
@@ -664,6 +2008,7 @@
 
 
                 <label>
+
                     مقدار
 
                     <input
@@ -686,6 +2031,7 @@
                     >
                         انصراف
                     </button>
+
 
                     <button
                         type="submit"
@@ -710,33 +2056,84 @@
         class="toast"
     ></div>
 
-
 </div>
-      <div id="barcodeScannerModal" class="barcode-scanner-modal" aria-hidden="true">
-        <div class="barcode-scanner-card">
-            <div class="barcode-scanner-header">
-                <div>
-                    <h3>اسکن بارکد</h3>
-                    <p>بارکد را داخل کادر قرار دهید</p>
-                </div>
-                <button id="closeBarcodeScannerBtn" type="button" class="barcode-close-btn">×</button>
+
+
+<!-- ================= BARCODE SCANNER ================= -->
+
+<div
+    id="barcodeScannerModal"
+    class="barcode-scanner-modal"
+    aria-hidden="true"
+>
+
+    <div class="barcode-scanner-card">
+
+        <div class="barcode-scanner-header">
+
+            <div>
+
+                <h3>اسکن بارکد</h3>
+
+                <p>
+                    بارکد را داخل کادر قرار دهید
+                </p>
+
             </div>
-            <div class="barcode-camera-wrap">
-                <video id="barcodeVideo" playsinline autoplay muted></video>
-                <div class="barcode-target"><span></span></div>
-            </div>
-            <div id="barcodeScannerStatus" class="barcode-scanner-status">دوربین در حال آماده‌سازی است...</div>
-            <button id="manualBarcodeBtn" type="button" class="barcode-manual-btn">ورود دستی بارکد</button>
+
+
+            <button
+                id="closeBarcodeScannerBtn"
+                type="button"
+                class="barcode-close-btn"
+            >
+                ×
+            </button>
+
         </div>
+
+
+        <div class="barcode-camera-wrap">
+
+            <video
+                id="barcodeVideo"
+                playsinline
+                autoplay
+                muted
+            ></video>
+
+
+            <div class="barcode-target">
+                <span></span>
+            </div>
+
+        </div>
+
+
+        <div
+            id="barcodeScannerStatus"
+            class="barcode-scanner-status"
+        >
+            دوربین در حال آماده‌سازی است...
+        </div>
+
+
+        <button
+            id="manualBarcodeBtn"
+            type="button"
+            class="barcode-manual-btn"
+        >
+            ورود دستی بارکد
+        </button>
+
     </div>
 
+</div>
 
+
+<!-- ================= APP JS ================= -->
 
 <script src="app.js"></script>
-  
-
-
-
 
 </body>
     </html>
