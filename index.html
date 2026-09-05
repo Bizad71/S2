@@ -7,96 +7,88 @@
 *{box-sizing:border-box}
 html,body{margin:0;padding:0;background:#f5f7f8;color:#17233c;font-family:Tahoma,Arial,sans-serif}
 body{min-height:100vh}
-button,input,select{font:inherit}
-button{border:0;cursor:pointer}
-.app{width:100%;max-width:520px;margin:auto;min-height:100vh;background:#f5f7f8;position:relative}
-.header{height:154px;position:fixed;top:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;z-index:50;background:linear-gradient(180deg,#d92f38 0%,#e55b61 48%,rgba(245,247,248,0) 100%);padding:15px 15px 0}
+.app{width:100%;max-width:520px;margin:auto;min-height:100vh;background:#f5f7f8}
+.header{height:154px;position:fixed;top:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;z-index:50;background:linear-gradient(180deg,#d92f38 0%,#e55b61 48%,rgba(245,247,248,0) 100%);padding:12px 14px 0}
 .header-top{height:45px;display:grid;grid-template-columns:45px 1fr 45px;align-items:center;direction:ltr}
 .connection{grid-column:1;display:flex;align-items:center;justify-content:flex-start}
-.connection-dot{width:13px;height:13px;border-radius:50%;background:#777;box-shadow:0 0 0 3px rgba(255,255,255,.22)}
-.connection-dot.connected{background:#20d26b}
-.menu-button{grid-column:3;width:42px;height:42px;background:rgba(255,255,255,.12);border-radius:12px;color:#fff;font-size:28px;line-height:38px}
+.connection-dot{width:13px;height:13px;border-radius:50%;background:#777;box-shadow:0 0 0 3px rgba(255,255,255,.2)}
+.connection-dot.connected{background:#19c967}
 .shop-name{grid-column:2;text-align:center;color:#fff;font-size:19px;font-weight:bold;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.connect-button{display:block;margin:8px auto 0;background:rgba(255,255,255,.94);color:#17233c;border-radius:10px;padding:8px 18px;font-size:13px;box-shadow:0 4px 15px rgba(0,0,0,.1)}
+.menu-button{grid-column:3;width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,.15);color:#fff;font-size:28px;line-height:35px}
+.connect-button{display:block;margin:8px auto 0;height:38px;padding:0 18px;border-radius:10px;background:#fff;color:#17233c;font-size:13px}
 .connect-button.connected{color:#15964b}
-.content{padding:170px 14px 100px;min-height:100vh}
+.content{padding:170px 14px 95px}
 .page{display:none}
 .page.active{display:block}
-.page-title{font-size:24px;font-weight:800;margin:0 0 18px}
-.lock-screen{position:fixed;inset:154px 0 0;z-index:40;background:#f5f7f8;display:flex;align-items:flex-start;justify-content:center;padding-top:65px;text-align:center}
+.page-title{margin:0 0 18px;font-size:24px;font-weight:800}
+.lock-screen{position:fixed;top:154px;bottom:0;left:0;right:0;z-index:40;background:#f5f7f8;display:flex;justify-content:center;padding-top:55px}
 .lock-screen.hidden{display:none}
-.lock-box{background:#fff;border-radius:18px;padding:25px 20px;width:calc(100% - 35px);box-shadow:0 8px 30px rgba(0,0,0,.07)}
-.lock-box strong{display:block;font-size:18px;margin-bottom:8px}
-.lock-box span{font-size:13px;color:#777}
-.stats{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:15px}
-.stat-card,.add-product-card{background:#fff;border-radius:16px;padding:16px;min-height:110px;box-shadow:0 5px 20px rgba(23,35,60,.06)}
-.stat-title{font-size:12px;color:#777;margin-bottom:10px}
-.stat-value{font-size:19px;font-weight:800}
+.lock-box{width:calc(100% - 35px);height:max-content;background:#fff;border-radius:18px;padding:25px 18px;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,.07)}
+.lock-box strong{display:block;font-size:17px;margin-bottom:8px}
+.lock-box span{font-size:12px;color:#777}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat-card,.add-product-card{min-height:108px;background:#fff;border-radius:16px;padding:15px;box-shadow:0 5px 20px rgba(23,35,60,.06)}
+.stat-title{font-size:12px;color:#777;margin-bottom:9px}
+.stat-value{font-size:18px;font-weight:800}
 .stat-sub{font-size:11px;color:#888;margin-top:8px}
-.stat-danger .stat-value,.stat-danger .stat-title{color:#d92f38}
+.stat-danger .stat-title,.stat-danger .stat-value{color:#d92f38}
 .add-product-card{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;cursor:pointer}
-.add-product-plus{font-size:45px;line-height:45px;color:#16a05a;font-weight:300}
-.add-product-text{font-size:13px;font-weight:bold;color:#17233c;margin-top:5px}
-.section{background:#fff;border-radius:17px;padding:16px;box-shadow:0 5px 20px rgba(23,35,60,.06);margin-bottom:14px}
-.section-title{font-weight:800;font-size:16px;margin-bottom:14px}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.add-product-plus{font-size:45px;line-height:42px;color:#16a05a;font-weight:300}
+.add-product-text{font-size:13px;font-weight:bold;margin-top:6px}
+.section{background:#fff;border-radius:16px;padding:15px;box-shadow:0 5px 20px rgba(23,35,60,.06);margin-top:13px}
+.section-title{font-size:15px;font-weight:800;margin-bottom:13px}
 .form-group{margin-bottom:11px}
-.form-group label{display:block;font-size:12px;margin-bottom:6px;color:#555}
-.form-control{width:100%;height:45px;border:1px solid #e1e4e8;border-radius:10px;background:#fff;padding:0 11px;outline:none;color:#17233c}
-.form-control:focus{border-color:#21a85e}
-.barcode-row{display:grid;grid-template-columns:1fr 45px;gap:7px}
-.scan-btn{height:45px;border-radius:10px;background:#17233c;color:#fff;font-size:20px}
-.primary-btn{width:100%;height:47px;border-radius:11px;background:#16a05a;color:#fff;font-weight:bold}
-.secondary-btn{height:42px;border-radius:10px;background:#eef1f3;color:#17233c;padding:0 15px}
-.sale-search{display:grid;grid-template-columns:1fr 45px;gap:7px}
-.product-card{margin-top:12px;background:#f7faf8;border:1px solid #e0eee5;border-radius:14px;padding:14px}
+.form-group label{display:block;font-size:12px;color:#555;margin-bottom:6px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.form-control{width:100%;height:44px;border:1px solid #e0e3e7;border-radius:10px;padding:0 10px;background:#fff;color:#17233c;outline:none}
+.form-control:focus{border-color:#18a35c}
+.barcode-row,.sale-search{display:grid;grid-template-columns:1fr 45px;gap:7px}
+.scan-btn{height:44px;border-radius:10px;background:#17233c;color:#fff;font-size:20px}
+.primary-btn{height:45px;width:100%;border-radius:10px;background:#16a05a;color:#fff;font-weight:bold}
+.product-card{margin-top:11px;padding:13px;border-radius:13px;background:#f5faf7;border:1px solid #dceee3}
 .product-card.hidden{display:none}
-.product-name{font-size:17px;font-weight:bold;margin-bottom:8px}
-.product-meta{font-size:12px;color:#777;line-height:2}
-.product-price{font-size:20px;font-weight:800;color:#15964b;margin:7px 0}
-.sale-action{display:grid;grid-template-columns:80px 1fr;gap:8px;margin-top:10px}
-.qty-input{height:45px;border:1px solid #ddd;border-radius:10px;text-align:center;width:100%}
-.cart-list{display:flex;flex-direction:column;gap:9px}
-.cart-empty{text-align:center;color:#888;font-size:13px;padding:25px 5px}
-.cart-item{border:1px solid #e8eaed;border-radius:12px;padding:11px}
-.cart-top{display:flex;justify-content:space-between;gap:8px}
-.cart-name{font-weight:bold;font-size:14px}
-.remove-item{background:#ffe9ea;color:#d92f38;border-radius:8px;padding:4px 8px}
-.cart-details{display:flex;justify-content:space-between;color:#777;font-size:11px;margin-top:7px}
-.cart-total{display:flex;justify-content:space-between;border-top:1px solid #eee;margin-top:12px;padding-top:12px;font-weight:bold;font-size:17px}
+.product-name{font-size:17px;font-weight:bold;margin-bottom:7px}
+.product-meta{font-size:11px;color:#777;line-height:1.9}
+.product-price{font-size:19px;color:#15964b;font-weight:800;margin:6px 0}
+.sale-action{display:grid;grid-template-columns:80px 1fr;gap:7px;margin-top:8px}
+.qty-input{height:44px;width:100%;border:1px solid #ddd;border-radius:10px;text-align:center}
+.cart-list{display:flex;flex-direction:column;gap:8px}
+.cart-empty{text-align:center;color:#888;font-size:12px;padding:23px 5px}
+.cart-item{border:1px solid #e7e9eb;border-radius:11px;padding:10px}
+.cart-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.cart-name{font-size:14px;font-weight:bold}
+.remove-item{background:#ffe8e9;color:#d92f38;border-radius:7px;padding:5px 8px;font-size:11px}
+.cart-details{display:flex;justify-content:space-between;color:#777;font-size:11px;margin-top:6px}
+.cart-total{border-top:1px solid #eee;margin-top:12px;padding-top:12px;display:flex;justify-content:space-between;font-weight:bold;font-size:17px}
 .checkout-btn{margin-top:12px}
-.inventory-list{display:flex;flex-direction:column;gap:10px}
-.inventory-item{background:#fff;border-radius:14px;padding:13px;box-shadow:0 4px 16px rgba(23,35,60,.05)}
+.inventory-list{display:flex;flex-direction:column;gap:9px}
+.inventory-item{background:#fff;border-radius:14px;padding:13px;box-shadow:0 4px 15px rgba(23,35,60,.05)}
 .inventory-head{display:flex;justify-content:space-between;gap:10px}
-.inventory-name{font-weight:bold;font-size:15px}
+.inventory-name{font-size:14px;font-weight:bold}
 .inventory-barcode{font-size:11px;color:#888;margin-top:5px}
-.inventory-stock{font-size:19px;font-weight:bold;margin-top:8px}
-.inventory-actions{display:flex;gap:7px;margin-top:10px}
-.stock-btn{width:43px;height:40px;border-radius:9px;background:#eef1f3;font-size:20px}
-.delete-btn{height:40px;padding:0 12px;border-radius:9px;background:#ffe9ea;color:#d92f38}
+.inventory-stock{font-size:19px;font-weight:bold}
+.inventory-actions{display:flex;gap:6px;margin-top:10px}
+.stock-btn{width:42px;height:39px;border-radius:9px;background:#eef1f3;font-size:20px}
+.delete-btn{height:39px;border-radius:9px;background:#ffe8e9;color:#d92f38;padding:0 11px;font-size:11px}
 .empty-state{text-align:center;color:#888;padding:30px 10px;font-size:13px}
-.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;height:72px;background:#fff;z-index:45;display:grid;grid-template-columns:1fr 1fr 1fr;border-top:1px solid #eee;box-shadow:0 -5px 20px rgba(0,0,0,.05);direction:rtl}
-.nav-btn{background:#fff;color:#888;font-size:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px}
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;height:70px;background:#fff;z-index:45;display:grid;grid-template-columns:1fr 1fr 1fr;border-top:1px solid #eee;box-shadow:0 -5px 20px rgba(0,0,0,.05);direction:rtl}
+.nav-btn{background:#fff;color:#888;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:11px}
 .nav-btn.active{color:#d92f38;font-weight:bold}
-.nav-icon{font-size:21px;line-height:20px}
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:80;display:none;align-items:flex-end;justify-content:center}
+.nav-icon{font-size:20px;line-height:20px}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:80;display:none}
 .overlay.open{display:flex}
-.modal{width:100%;max-width:520px;max-height:92vh;overflow:auto;background:#fff;border-radius:22px 22px 0 0;padding:18px 15px 25px}
-.modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:15px}
-.modal-title{font-size:18px;font-weight:800}
-.close-btn{width:38px;height:38px;border-radius:10px;background:#f1f3f5;color:#555;font-size:20px}
-.menu-overlay{align-items:flex-start;padding-top:70px}
-.menu-panel{width:calc(100% - 28px);max-width:490px;background:#fff;border-radius:17px;padding:8px;box-shadow:0 15px 45px rgba(0,0,0,.18)}
-.menu-item{width:100%;height:49px;background:#fff;border-radius:11px;text-align:right;padding:0 15px;color:#17233c}
-.menu-item:hover{background:#f5f7f8}
-.settings-item,.contact-box{font-size:13px;color:#555;line-height:2}
-.toast{position:fixed;left:50%;bottom:86px;transform:translateX(-50%) translateY(20px);background:#17233c;color:#fff;padding:11px 17px;border-radius:10px;font-size:12px;z-index:120;opacity:0;pointer-events:none;transition:.2s;max-width:90%;text-align:center}
+.menu-overlay{align-items:flex-start;justify-content:center;padding-top:66px}
+.menu-panel{width:calc(100% - 28px);max-width:490px;background:#fff;border-radius:16px;padding:7px;box-shadow:0 15px 45px rgba(0,0,0,.18)}
+.menu-item{width:100%;height:47px;border-radius:10px;background:#fff;text-align:right;padding:0 14px;color:#17233c}
+.menu-item:active{background:#f2f4f5}
+.modal-overlay{align-items:flex-end;justify-content:center}
+.modal{width:100%;max-width:520px;max-height:92vh;overflow-y:auto;background:#fff;border-radius:21px 21px 0 0;padding:17px 15px 24px}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.modal-title{font-size:17px;font-weight:800}
+.close-btn{width:37px;height:37px;border-radius:10px;background:#f0f2f3;color:#555;font-size:20px}
+.contact-text,.settings-text{font-size:13px;color:#555;line-height:2}
+.toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%) translateY(15px);opacity:0;pointer-events:none;z-index:120;background:#17233c;color:#fff;padding:10px 15px;border-radius:9px;font-size:12px;transition:.18s;max-width:90%;text-align:center}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-.hidden{display:none!important}
-@media(max-width:360px){
-.stats{gap:8px}
-.stat-card,.add-product-card{padding:12px}
-}
 </style>
 </head>
 <body>
@@ -110,10 +102,11 @@ button{border:0;cursor:pointer}
 </header><div id="lockScreen" class="lock-screen">
 <div class="lock-box">
 <strong>لطفاً به دیتابیس متصل شوید</strong>
-<span>برای شروع کار، پوشه دیتابیس BizadShop را انتخاب کنید.</span>
+<span>برای شروع کار، پوشه دیتابیس را انتخاب کنید.</span>
 </div>
 </div><main class="content"><section id="homePage" class="page active">
-<h1 class="page-title">مدیریت فروشگاه</h1><div class="stats">
+<h1 class="page-title">مدیریت فروشگاه</h1>
+<div class="stats">
 <div class="stat-card">
 <div class="stat-title">فروش امروز</div>
 <div id="todaySales" class="stat-value">۰ تومان</div>
@@ -130,9 +123,6 @@ button{border:0;cursor:pointer}
 <div id="lowStock" class="stat-value">۰</div>
 <div class="stat-sub">نیاز به بررسی</div>
 </div>
-</div><div class="section">
-<div class="section-title">دسترسی سریع</div>
-<button id="homeSaleButton" class="primary-btn" type="button">ورود به فروش</button>
 </div>
 </section><section id="salePage" class="page">
 <h1 class="page-title">فروش</h1><div class="section">
@@ -185,21 +175,16 @@ button{border:0;cursor:pointer}
 </div>
 </section><section id="contactPage" class="page">
 <h1 class="page-title">تماس با ما</h1>
-<div class="section contact-box">
+<div class="section contact-text">
 <div class="section-title">BizadShop</div>
-<div>برای پشتیبانی و ارتباط با ما می‌توانید از راه‌های ارتباطی تعریف‌شده توسط مدیر سیستم استفاده کنید.</div>
+<div>برای پشتیبانی و ارتباط با ما از راه‌های ارتباطی پشتیبانی استفاده کنید.</div>
 </div>
 </section></main><nav class="bottom-nav">
-<button class="nav-btn" data-page="salePage" type="button">
-<span class="nav-icon">🛒</span><span>فروش</span>
-</button>
-<button class="nav-btn active" data-page="homePage" type="button">
-<span class="nav-icon">⌂</span><span>خانه</span>
-</button>
-<button class="nav-btn" data-page="inventoryPage" type="button">
-<span class="nav-icon">▤</span><span>انبار</span>
-</button>
-</nav></div><div id="menuOverlay" class="overlay menu-overlay">
+<button class="nav-btn" data-page="salePage" type="button"><span class="nav-icon">🛒</span><span>فروش</span></button>
+<button class="nav-btn active" data-page="homePage" type="button"><span class="nav-icon">⌂</span><span>خانه</span></button>
+<button class="nav-btn" data-page="inventoryPage" type="button"><span class="nav-icon">▤</span><span>انبار</span></button>
+</nav>
+</div><div id="menuOverlay" class="overlay menu-overlay">
 <div class="menu-panel">
 <button class="menu-item" data-page="homePage" type="button">خانه</button>
 <button class="menu-item" data-page="salePage" type="button">فروش</button>
@@ -207,7 +192,7 @@ button{border:0;cursor:pointer}
 <button class="menu-item" data-page="settingsPage" type="button">تنظیمات</button>
 <button class="menu-item" data-page="contactPage" type="button">تماس با ما</button>
 </div>
-</div><div id="productOverlay" class="overlay">
+</div><div id="productOverlay" class="overlay modal-overlay">
 <div class="modal">
 <div class="modal-head">
 <div class="modal-title">ثبت کالا جدید</div>
@@ -236,11 +221,11 @@ button{border:0;cursor:pointer}
 </div><div class="form-row">
 <div class="form-group">
 <label>قیمت خرید</label>
-<input id="productPurchasePrice" class="form-control" inputmode="decimal" type="number" min="0">
+<input id="productPurchasePrice" class="form-control" type="number" min="0" inputmode="decimal">
 </div>
 <div class="form-group">
 <label>قیمت فروش</label>
-<input id="productSalePrice" class="form-control" inputmode="decimal" type="number" min="0">
+<input id="productSalePrice" class="form-control" type="number" min="0" inputmode="decimal">
 </div>
 </div><div class="form-row">
 <div class="form-group">
@@ -266,4 +251,4 @@ button{border:0;cursor:pointer}
 
 </div>
 </div><div id="toast" class="toast"></div><script src="main.js"></script></body>
-    </html>
+</html>
