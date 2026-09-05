@@ -1,41 +1,55 @@
-const DATA_FILE_NAME = "bizadshop-data.json";
+
+
+/* =========================================================
+   BizadShop - Local Database App
+   IndexedDB + bizadshop-data.json
+   Scanner: Binary Eye
+   ========================================================= */
 
 const APP_DB_NAME = "BizadshopAppDB";
 const APP_DB_VERSION = 2;
 
 const DATA_STORE = "data";
-const HANDLES_STORE = "handles";
+const HANDLE_STORE = "handles";
 
-const MAIN_DATA_KEY = "main-data";
-const MAIN_FOLDER_KEY = "main-folder";
+const DATA_KEY = "main-data";
+const FOLDER_KEY = "main-folder";
 
+const DATA_FILE_NAME = "bizadshop-data.json";
+
+let db = null;
+let appData = null;
 let folderHandle = null;
-let folderConnected = false;
-let folderPermissionGranted = false;
 
-let database = createEmptyDatabase();
+let currentPage = "dashboard";
 let cart = [];
-let initialized = false;
-let toastTimer = null;
 
+/* =========================================================
+   Default Data
+   ========================================================= */
 
-/* ============================================================
-   BASIC UTILITIES
-   ============================================================ */
-
-function generateId() {
-    return (
-        Date.now().toString(36) +
-        Math.random().toString(36).slice(2, 9)
-    );
+function createEmptyData() {
+    return {
+        version: 2,
+        products: [],
+        inventory: {},
+        sales: [],
+        sale_items: [],
+        settings: {}
+    };
 }
 
-function nowISO() {
-    return new Date().toISOString();
+/* =========================================================
+   Utility
+   ========================================================= */
+
+function $(id) {
+    return document.getElementById(id);
 }
 
-function formatMoney(value) {
+function money(value) {
     const number = Number(value) || 0;
+
     return new Intl.NumberFormat("fa-IR").format(number) + " تومان";
 }
 
@@ -48,369 +62,285 @@ function escapeHTML(value) {
         .replace(/'/g, "&#039;");
 }
 
-function showToast(message) {
-    const toast = document.getElementById("toast");
+function uid() {
+    return (
+        Date.now().toString(36) +
+        Math.random().toString(36).substring(2, 10)
+    );
+}
 
-    if (!toast) return;
+function todayKey() {
+    const d = new Date();
+
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+
+    return `${y}-${m}-${day}`;
+}
+
+function showToast(message) {
+    let toast = $("toast");
+
+    if (!toast) {
+        toast = document.createElement("div");
+        toast.id = "toast";
+
+        toast.style.position = "fixed";
+        toast.style.left = "50%";
+        toast.style.bottom = "90px";
+        toast.style.transform = "translateX(-50%)";
+        toast.style.background = "#222";
+        toast.style.color = "#fff";
+        toast.style.padding = "12px 18px";
+        toast.style.borderRadius = "12px";
+        toast.style.zIndex = "99999";
+        toast.style.fontSize = "14px";
+        toast.style.maxWidth = "90%";
+        toast.style.textAlign = "center";
+        toast.style.boxSizing = "border-box";
+
+        document.body.appendChild(toast);
+    }
 
     toast.textContent = message;
-    toast.classList.add("show");
+    toast.style.display = "block";
 
-    clearTimeout(toastTimer);
+    clearTimeout(toast._timer);
 
-    toastTimer = setTimeout(() => {
-        toast.classList.remove("show");
+    toast._timer = setTimeout(() => {
+        toast.style.display = "none";
     }, 2500);
 }
 
-function setConnectionStatus(message) {
-    const element =
-        document.getElementById("connectionStatus");
+/* =========================================================
+   IndexedDB
+   ========================================================= */
 
-    if (!element) return;
-
-    element.textContent = message;
-}
-
-
-/* ============================================================
-   DATABASE
-   ============================================================ */
-
-function createEmptyDatabase() {
-    return {
-        version: 2,
-        products: [],
-        inventory: {},
-        sales: [],
-        sale_items: [],
-        settings: {}
-    };
-}
-
-function normalizeDatabase(data) {
-    if (!data || typeof data !== "object") {
-        return createEmptyDatabase();
-    }
-
-    return {
-        version: 2,
-
-        products:
-            Array.isArray(data.products)
-                ? data.products
-                : [],
-
-        inventory:
-            data.inventory &&
-            typeof data.inventory === "object"
-                ? data.inventory
-                : {},
-
-        sales:
-            Array.isArray(data.sales)
-                ? data.sales
-                : [],
-
-        sale_items:
-            Array.isArray(data.sale_items)
-                ? data.sale_items
-                : [],
-
-        settings:
-            data.settings &&
-            typeof data.settings === "object"
-                ? data.settings
-                : {}
-    };
-}
-
-
-/* ============================================================
-   INDEXED DB
-   ============================================================ */
-
-function openAppDB() {
+function openDatabase() {
     return new Promise((resolve, reject) => {
-
-        if (!window.indexedDB) {
-            reject(new Error("IndexedDB is not supported."));
+        if (!("indexedDB" in window)) {
+            reject(new Error("IndexedDB در این مرورگر پشتیبانی نمی‌شود."));
             return;
         }
 
-        const request =
-            indexedDB.open(
-                APP_DB_NAME,
-                APP_DB_VERSION
-            );
-
-        request.onupgradeneeded = event => {
-
-            const db = event.target.result;
-
-            if (!db.objectStoreNames.contains(DATA_STORE)) {
-                db.createObjectStore(DATA_STORE);
-            }
-
-            if (!db.objectStoreNames.contains(HANDLES_STORE)) {
-                db.createObjectStore(HANDLES_STORE);
-            }
-        };
-
-        request.onsuccess = () => {
-            resolve(request.result);
-        };
-
-        request.onerror = () => {
-            reject(request.error);
-        };
-    });
-}
-
-
-async function saveLocalDatabase() {
-
-    const db = await openAppDB();
-
-    return new Promise((resolve, reject) => {
-
-        const transaction =
-            db.transaction(
-                DATA_STORE,
-                "readwrite"
-            );
-
-        const store =
-            transaction.objectStore(DATA_STORE);
-
-        store.put(
-            normalizeDatabase(database),
-            MAIN_DATA_KEY
+        const request = indexedDB.open(
+            APP_DB_NAME,
+            APP_DB_VERSION
         );
 
-        transaction.oncomplete = () => {
-            db.close();
-            resolve();
+        request.onupgradeneeded = function (event) {
+            const database = event.target.result;
+
+            if (!database.objectStoreNames.contains(DATA_STORE)) {
+                database.createObjectStore(DATA_STORE);
+            }
+
+            if (!database.objectStoreNames.contains(HANDLE_STORE)) {
+                database.createObjectStore(HANDLE_STORE);
+            }
         };
 
-        transaction.onerror = () => {
-            db.close();
-            reject(transaction.error);
+        request.onsuccess = function () {
+            db = request.result;
+            resolve(db);
         };
 
-        transaction.onabort = () => {
-            db.close();
-            reject(transaction.error);
+        request.onerror = function () {
+            reject(request.error);
         };
     });
 }
 
+function idbGet(storeName, key) {
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(
+            storeName,
+            "readonly"
+        );
+
+        const store = transaction.objectStore(storeName);
+        const request = store.get(key);
+
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+function idbSet(storeName, key, value) {
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(
+            storeName,
+            "readwrite"
+        );
+
+        const store = transaction.objectStore(storeName);
+        const request = store.put(value, key);
+
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+    });
+}
+
+function idbDelete(storeName, key) {
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction(
+            storeName,
+            "readwrite"
+        );
+
+        const store = transaction.objectStore(storeName);
+        const request = store.delete(key);
+
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+    });
+}
+
+/* =========================================================
+   Local Database
+   ========================================================= */
 
 async function loadLocalDatabase() {
+    let data = await idbGet(DATA_STORE, DATA_KEY);
 
-    const db = await openAppDB();
+    if (!data) {
+        data = createEmptyData();
 
-    return new Promise((resolve, reject) => {
+        await idbSet(
+            DATA_STORE,
+            DATA_KEY,
+            data
+        );
+    }
 
-        const transaction =
-            db.transaction(
-                DATA_STORE,
-                "readonly"
-            );
+    if (!Array.isArray(data.products)) {
+        data.products = [];
+    }
 
-        const store =
-            transaction.objectStore(DATA_STORE);
+    if (!data.inventory || typeof data.inventory !== "object") {
+        data.inventory = {};
+    }
 
-        const request =
-            store.get(MAIN_DATA_KEY);
+    if (!Array.isArray(data.sales)) {
+        data.sales = [];
+    }
 
-        request.onsuccess = () => {
+    if (!Array.isArray(data.sale_items)) {
+        data.sale_items = [];
+    }
 
-            database =
-                normalizeDatabase(request.result);
+    if (!data.settings || typeof data.settings !== "object") {
+        data.settings = {};
+    }
 
-            db.close();
+    appData = data;
 
-            resolve(database);
-        };
-
-        request.onerror = () => {
-
-            db.close();
-
-            reject(request.error);
-        };
-    });
+    return appData;
 }
 
+async function saveLocalDatabase() {
+    if (!appData) {
+        return;
+    }
 
-/* ============================================================
-   FOLDER HANDLE
-   ============================================================ */
+    await idbSet(
+        DATA_STORE,
+        DATA_KEY,
+        appData
+    );
+
+    await writeFolderFileIfConnected();
+}
+
+/* =========================================================
+   Folder / File System
+   ========================================================= */
+
+async function getSavedFolderHandle() {
+    try {
+        return await idbGet(
+            HANDLE_STORE,
+            FOLDER_KEY
+        );
+    } catch (error) {
+        console.error(error);
+        return null;
+    }
+}
 
 async function saveFolderHandle(handle) {
-
-    const db = await openAppDB();
-
-    return new Promise((resolve, reject) => {
-
-        const transaction =
-            db.transaction(
-                HANDLES_STORE,
-                "readwrite"
-            );
-
-        transaction
-            .objectStore(HANDLES_STORE)
-            .put(handle, MAIN_FOLDER_KEY);
-
-        transaction.oncomplete = () => {
-            db.close();
-            resolve();
-        };
-
-        transaction.onerror = () => {
-            db.close();
-            reject(transaction.error);
-        };
-
-        transaction.onabort = () => {
-            db.close();
-            reject(transaction.error);
-        };
-    });
-}
-
-
-async function getFolderHandle() {
-
-    const db = await openAppDB();
-
-    return new Promise((resolve, reject) => {
-
-        const transaction =
-            db.transaction(
-                HANDLES_STORE,
-                "readonly"
-            );
-
-        const request =
-            transaction
-                .objectStore(HANDLES_STORE)
-                .get(MAIN_FOLDER_KEY);
-
-        request.onsuccess = () => {
-            db.close();
-            resolve(request.result || null);
-        };
-
-        request.onerror = () => {
-            db.close();
-            reject(request.error);
-        };
-    });
-}
-
-
-async function deleteFolderHandle() {
-
-    const db = await openAppDB();
-
-    return new Promise((resolve, reject) => {
-
-        const transaction =
-            db.transaction(
-                HANDLES_STORE,
-                "readwrite"
-            );
-
-        transaction
-            .objectStore(HANDLES_STORE)
-            .delete(MAIN_FOLDER_KEY);
-
-        transaction.oncomplete = () => {
-            db.close();
-            resolve();
-        };
-
-        transaction.onerror = () => {
-            db.close();
-            reject(transaction.error);
-        };
-    });
-}
-
-
-/* ============================================================
-   FOLDER PERMISSION
-   ============================================================ */
-
-async function getFolderPermission(handle) {
-
-    if (!handle) return false;
+    folderHandle = handle;
 
     try {
-
-        if (!handle.queryPermission) {
-            return false;
-        }
-
-        const permission =
-            await handle.queryPermission({
-                mode: "readwrite"
-            });
-
-        return permission === "granted";
-
+        await idbSet(
+            HANDLE_STORE,
+            FOLDER_KEY,
+            handle
+        );
     } catch (error) {
-
-        return false;
+        console.error(error);
     }
 }
 
-
-async function requestFolderPermission(handle) {
-
-    if (!handle) return false;
+async function removeFolderHandle() {
+    folderHandle = null;
 
     try {
-
-        if (!handle.requestPermission) {
-            return false;
-        }
-
-        const permission =
-            await handle.requestPermission({
-                mode: "readwrite"
-            });
-
-        return permission === "granted";
-
+        await idbDelete(
+            HANDLE_STORE,
+            FOLDER_KEY
+        );
     } catch (error) {
-
-        return false;
+        console.error(error);
     }
 }
 
-
-/* ============================================================
-   FOLDER FILE
-   ============================================================ */
-
-async function readFolderData(handle) {
-
+async function verifyFolderPermission(handle, requestPermission) {
     if (!handle) {
-        throw new Error("Folder handle not found.");
+        return false;
     }
 
-    /*
-       اگر فایل وجود نداشته باشد، خطا می‌دهیم
-       تا connectSelectedFolder بتواند آن را بسازد.
-    */
+    try {
+        const options = {
+            mode: "readwrite"
+        };
 
+        if (
+            typeof handle.queryPermission === "function"
+        ) {
+            const permission =
+                await handle.queryPermission(options);
+
+            if (permission === "granted") {
+                return true;
+            }
+        }
+
+        if (
+            requestPermission &&
+            typeof handle.requestPermission === "function"
+        ) {
+            const permission =
+                await handle.requestPermission(options);
+
+            return permission === "granted";
+        }
+
+        return false;
+    } catch (error) {
+        console.error(error);
+        return false;
+    }
+}
+
+async function readFolderFile(handle) {
     const fileHandle =
         await handle.getFileHandle(
-            DATA_FILE_NAME
+            DATA_FILE_NAME,
+            {
+                create: false
+            }
         );
 
     const file =
@@ -420,27 +350,13 @@ async function readFolderData(handle) {
         await file.text();
 
     if (!text.trim()) {
-        return createEmptyDatabase();
+        return null;
     }
 
-    let parsed;
-
-    try {
-        parsed = JSON.parse(text);
-    } catch (error) {
-        throw new Error("Invalid JSON data file.");
-    }
-
-    return normalizeDatabase(parsed);
+    return JSON.parse(text);
 }
 
-
-async function writeDataToFolder(handle, data) {
-
-    if (!handle) {
-        throw new Error("Folder handle not found.");
-    }
-
+async function writeFolderFile(handle) {
     const fileHandle =
         await handle.getFileHandle(
             DATA_FILE_NAME,
@@ -454,7 +370,7 @@ async function writeDataToFolder(handle, data) {
 
     await writable.write(
         JSON.stringify(
-            normalizeDatabase(data),
+            appData,
             null,
             2
         )
@@ -463,701 +379,978 @@ async function writeDataToFolder(handle, data) {
     await writable.close();
 }
 
-
-/* ============================================================
-   DATA CHECK
-   ============================================================ */
-
-function hasRealData(data) {
-
-    if (!data) return false;
-
-    return (
-        (Array.isArray(data.products) &&
-            data.products.length > 0) ||
-
-        (data.inventory &&
-            Object.keys(data.inventory).length > 0) ||
-
-        (Array.isArray(data.sales) &&
-            data.sales.length > 0) ||
-
-        (Array.isArray(data.sale_items) &&
-            data.sale_items.length > 0)
-    );
-}
-
-
-/* ============================================================
-   CONNECT FOLDER
-   ============================================================ */
-
-async function connectSelectedFolder(handle) {
-
-    if (!handle) return false;
-
-    folderHandle = handle;
-
-    try {
-
-        await saveFolderHandle(handle);
-
-    } catch (error) {
-
-        console.error(
-            "Could not save folder handle:",
-            error
-        );
-    }
-
-    let permission =
-        await getFolderPermission(handle);
-
-    /*
-       برای پوشه‌ای که تازه انتخاب شده،
-       معمولاً permission باید granted باشد.
-    */
-
-    if (!permission) {
-
-        permission =
-            await requestFolderPermission(handle);
-    }
-
-    if (!permission) {
-
-        folderPermissionGranted = false;
-        folderConnected = false;
-
-        setConnectionStatus(
-            "پوشه متصل نیست؛ اطلاعات محلی فعال است."
-        );
-
-        showToast(
-            "دسترسی نوشتن در پوشه داده نشد."
-        );
-
+async function writeFolderFileIfConnected() {
+    if (!folderHandle || !appData) {
+        updateConnectionStatus(false);
         return false;
     }
 
-    folderPermissionGranted = true;
-
     try {
-
-        let folderData = null;
-
-        let fileExists = true;
-
-        try {
-
-            folderData =
-                await readFolderData(handle);
-
-        } catch (error) {
-
-            fileExists = false;
-        }
-
-
-        /*
-           اگر فایل وجود داشته و واقعاً اطلاعات داشته باشد،
-           فایل پوشه منبع اصلی برای Sync اولیه است.
-        */
-
-        if (
-            fileExists &&
-            hasRealData(folderData)
-        ) {
-
-            database =
-                normalizeDatabase(folderData);
-
-            await saveLocalDatabase();
-
-        } else {
-
-            /*
-               اگر فایل وجود نداشته باشد یا خالی باشد،
-               اطلاعات IndexedDB حفظ می‌شود
-               و همان اطلاعات داخل فایل نوشته می‌شود.
-            */
-
-            await writeDataToFolder(
-                handle,
-                database
+        const allowed =
+            await verifyFolderPermission(
+                folderHandle,
+                false
             );
 
-            await saveLocalDatabase();
-        }
-
-
-        folderConnected = true;
-
-        setConnectionStatus(
-            "پوشه متصل است؛ اطلاعات ذخیره می‌شود."
-        );
-
-        await refreshAll();
-
-        showToast(
-            "پوشه با موفقیت متصل شد."
-        );
-
-        return true;
-
-    } catch (error) {
-
-        console.error(
-            "Folder connection error:",
-            error
-        );
-
-        folderConnected = false;
-
-        setConnectionStatus(
-            "پوشه در دسترس نیست؛ اطلاعات محلی فعال است."
-        );
-
-        showToast(
-            "اتصال پوشه انجام نشد."
-        );
-
-        return false;
-    }
-}
-
-
-async function chooseFolder() {
-
-    if (!window.showDirectoryPicker) {
-
-        showToast(
-            "مرورگر شما از انتخاب پوشه پشتیبانی نمی‌کند."
-        );
-
-        return false;
-    }
-
-    try {
-
-        const handle =
-            await window.showDirectoryPicker({
-                mode: "readwrite"
-            });
-
-        return await connectSelectedFolder(handle);
-
-    } catch (error) {
-
-        if (error?.name === "AbortError") {
+        if (!allowed) {
+            updateConnectionStatus(false);
             return false;
         }
 
+        await writeFolderFile(folderHandle);
+
+        updateConnectionStatus(true);
+
+        return true;
+    } catch (error) {
         console.error(
-            "chooseFolder error:",
+            "Folder write error:",
             error
         );
 
-        showToast(
-            "اتصال پوشه انجام نشد."
-        );
+        updateConnectionStatus(false);
 
         return false;
     }
 }
 
+/* =========================================================
+   Folder Connection
+   ========================================================= */
 
-async function tryAutoConnect() {
+async function connectFolder(handle) {
+    if (!handle) {
+        return false;
+    }
 
     try {
-
-        const handle =
-            await getFolderHandle();
-
-        if (!handle) {
-
-            folderConnected = false;
-            folderPermissionGranted = false;
-
-            setConnectionStatus(
-                "ذخیره‌سازی محلی فعال است."
+        const permission =
+            await verifyFolderPermission(
+                handle,
+                true
             );
+
+        if (!permission) {
+            showToast(
+                "اجازه دسترسی به پوشه داده نشد."
+            );
+
+            updateConnectionStatus(false);
 
             return false;
         }
 
         folderHandle = handle;
 
-        const permission =
-            await getFolderPermission(handle);
+        await saveFolderHandle(handle);
 
-        if (!permission) {
-
-            folderConnected = false;
-            folderPermissionGranted = false;
-
-            setConnectionStatus(
-                "اطلاعات محلی فعال است؛ پوشه نیاز به اتصال دارد."
-            );
-
-            return false;
-        }
-
-        folderPermissionGranted = true;
-
-        let folderData = null;
-        let fileExists = true;
+        let fileData = null;
 
         try {
-
-            folderData =
-                await readFolderData(handle);
-
+            fileData =
+                await readFolderFile(handle);
         } catch (error) {
-
-            fileExists = false;
-        }
-
-        if (
-            fileExists &&
-            hasRealData(folderData)
-        ) {
-
-            database =
-                normalizeDatabase(folderData);
-
-            await saveLocalDatabase();
-
-        } else {
-
-            await writeDataToFolder(
-                handle,
-                database
+            console.log(
+                "Data file does not exist yet."
             );
-
-            await saveLocalDatabase();
         }
 
-        folderConnected = true;
+        /*
+         اگر فایل وجود داشته باشد:
+         داده فایل به عنوان نسخه اصلی خوانده می‌شود.
+         اگر فایل وجود نداشته باشد:
+         اطلاعات IndexedDB داخل فایل ساخته می‌شود.
+        */
 
-        setConnectionStatus(
-            "پوشه متصل است؛ اطلاعات ذخیره می‌شود."
+        if (fileData && typeof fileData === "object") {
+            appData = normalizeData(fileData);
+
+            await idbSet(
+                DATA_STORE,
+                DATA_KEY,
+                appData
+            );
+        } else {
+            await writeFolderFile(handle);
+        }
+
+        updateConnectionStatus(true);
+
+        renderAll();
+
+        showToast(
+            "پوشه با موفقیت متصل شد."
         );
 
         return true;
-
     } catch (error) {
-
         console.error(
-            "Auto connect error:",
+            "Connect folder error:",
             error
         );
 
-        folderConnected = false;
-        folderPermissionGranted = false;
-
-        setConnectionStatus(
-            "پوشه موقتاً در دسترس نیست؛ اطلاعات محلی فعال است."
-        );
-
-        return false;
-    }
-}
-
-
-async function reconnectExistingFolder() {
-
-    if (!folderHandle) {
-
-        folderHandle =
-            await getFolderHandle();
-    }
-
-    if (!folderHandle) {
-        return chooseFolder();
-    }
-
-    const granted =
-        await requestFolderPermission(
-            folderHandle
-        );
-
-    if (!granted) {
-
-        folderConnected = false;
-        folderPermissionGranted = false;
-
-        setConnectionStatus(
-            "اطلاعات محلی فعال است."
-        );
+        updateConnectionStatus(false);
 
         showToast(
-            "دسترسی پوشه داده نشد."
+            "اتصال پوشه انجام نشد."
         );
 
         return false;
     }
-
-    return connectSelectedFolder(
-        folderHandle
-    );
 }
 
+function normalizeData(data) {
+    const result =
+        data && typeof data === "object"
+            ? data
+            : createEmptyData();
 
-/* ============================================================
-   SAVE DATABASE
-   ============================================================ */
-
-async function saveDatabase() {
-
-    /*
-       همیشه ابتدا IndexedDB ذخیره می‌شود.
-       بنابراین قطع شدن پوشه نباید باعث از بین رفتن اطلاعات شود.
-    */
-
-    database =
-        normalizeDatabase(database);
-
-    await saveLocalDatabase();
-
-
-    /*
-       سپس در صورت وجود پوشه و دسترسی،
-       فایل JSON نیز به‌روزرسانی می‌شود.
-    */
+    if (!Array.isArray(result.products)) {
+        result.products = [];
+    }
 
     if (
-        folderHandle &&
-        folderPermissionGranted
+        !result.inventory ||
+        typeof result.inventory !== "object"
     ) {
-
-        try {
-
-            await writeDataToFolder(
-                folderHandle,
-                database
-            );
-
-            folderConnected = true;
-
-            setConnectionStatus(
-                "اطلاعات محلی و فایل پوشه ذخیره شد."
-            );
-
-        } catch (error) {
-
-            console.error(
-                "Folder save error:",
-                error
-            );
-
-            folderConnected = false;
-
-            setConnectionStatus(
-                "اطلاعات محلی ذخیره شد؛ پوشه فعلاً در دسترس نیست."
-            );
-        }
-
-    } else {
-
-        setConnectionStatus(
-            "اطلاعات در حافظه محلی ذخیره شد."
-        );
+        result.inventory = {};
     }
+
+    if (!Array.isArray(result.sales)) {
+        result.sales = [];
+    }
+
+    if (!Array.isArray(result.sale_items)) {
+        result.sale_items = [];
+    }
+
+    if (
+        !result.settings ||
+        typeof result.settings !== "object"
+    ) {
+        result.settings = {};
+    }
+
+    result.version = 2;
+
+    return result;
 }
 
-
-/* ============================================================
-   PRODUCTS
-   ============================================================ */
-
-function getProducts() {
-    return database.products;
-}
-
-function getProduct(id) {
-    return database.products.find(
-        product => product.id === id
-    );
-}
-
-function getProductByBarcode(barcode) {
-
-    const code =
-        String(barcode ?? "").trim();
-
-    return database.products.find(
-        product =>
-            String(product.barcode ?? "").trim() === code
-    );
-}
-
-function getQuantity(productId) {
-
-    return Number(
-        database.inventory[productId] ?? 0
-    );
-}
-
-function setQuantity(productId, quantity) {
-
-    database.inventory[productId] =
-        Math.max(
-            0,
-            Number(quantity) || 0
-        );
-}
-
-
-/* ============================================================
-   PRODUCT FORM
-   ============================================================ */
-
-async function handleProductFormSubmit(event) {
-
-    event.preventDefault();
-
-    const id =
-        document.getElementById(
-            "productId"
-        ).value.trim();
-
-    const barcode =
-        document.getElementById(
-            "productBarcode"
-        ).value.trim();
-
-    const name =
-        document.getElementById(
-            "productName"
-        ).value.trim();
-
-    const category =
-        document.getElementById(
-            "productCategory"
-        ).value.trim();
-
-    const purchasePrice =
-        Number(
-            document.getElementById(
-                "purchasePrice"
-            ).value
-        ) || 0;
-
-    const salePrice =
-        Number(
-            document.getElementById(
-                "salePrice"
-            ).value
-        ) || 0;
-
-    const unit =
-        document.getElementById(
-            "productUnit"
-        ).value;
-
-    const initialQuantity =
-        Number(
-            document.getElementById(
-                "initialQuantity"
-            ).value
-        ) || 0;
-
-    if (!barcode) {
-
+async function chooseFolder() {
+    if (
+        !("showDirectoryPicker" in window)
+    ) {
         showToast(
-            "بارکد را وارد کنید."
+            "مرورگر شما انتخاب پوشه را پشتیبانی نمی‌کند."
         );
 
         return;
     }
 
-    if (!name) {
+    try {
+        const handle =
+            await window.showDirectoryPicker({
+                mode: "readwrite"
+            });
 
+        await connectFolder(handle);
+    } catch (error) {
+        if (
+            error &&
+            error.name === "AbortError"
+        ) {
+            return;
+        }
+
+        console.error(error);
+
+        showToast(
+            "انتخاب پوشه انجام نشد."
+        );
+    }
+}
+
+async function tryAutoConnect() {
+    const saved =
+        await getSavedFolderHandle();
+
+    if (!saved) {
+        updateConnectionStatus(false);
+        return false;
+    }
+
+    folderHandle = saved;
+
+    const allowed =
+        await verifyFolderPermission(
+            saved,
+            false
+        );
+
+    if (!allowed) {
+        updateConnectionStatus(false);
+        return false;
+    }
+
+    try {
+        const fileData =
+            await readFolderFile(saved);
+
+        if (fileData) {
+            appData =
+                normalizeData(fileData);
+
+            await idbSet(
+                DATA_STORE,
+                DATA_KEY,
+                appData
+            );
+        }
+
+        updateConnectionStatus(true);
+
+        return true;
+    } catch (error) {
+        console.error(error);
+
+        updateConnectionStatus(false);
+
+        return false;
+    }
+}
+
+async function reconnectFolder() {
+    const saved =
+        await getSavedFolderHandle();
+
+    if (!saved) {
+        await chooseFolder();
+        return;
+    }
+
+    try {
+        const allowed =
+            await verifyFolderPermission(
+                saved,
+                true
+            );
+
+        if (!allowed) {
+            showToast(
+                "اجازه دسترسی به پوشه داده نشد."
+            );
+
+            return;
+        }
+
+        folderHandle = saved;
+
+        let fileData = null;
+
+        try {
+            fileData =
+                await readFolderFile(saved);
+        } catch (error) {
+            fileData = null;
+        }
+
+        if (fileData) {
+            appData =
+                normalizeData(fileData);
+
+            await idbSet(
+                DATA_STORE,
+                DATA_KEY,
+                appData
+            );
+        } else {
+            await writeFolderFile(saved);
+        }
+
+        updateConnectionStatus(true);
+
+        renderAll();
+
+        showToast(
+            "پوشه دوباره متصل شد."
+        );
+    } catch (error) {
+        console.error(error);
+
+        updateConnectionStatus(false);
+
+        showToast(
+            "اتصال دوباره انجام نشد."
+        );
+    }
+}
+
+/* =========================================================
+   Connection UI
+   ========================================================= */
+
+function updateConnectionStatus(connected) {
+    const elements = [
+        $("connectionStatus"),
+        $("folderStatus"),
+        $("statusText")
+    ];
+
+    elements.forEach(element => {
+        if (!element) {
+            return;
+        }
+
+        if (connected) {
+            element.textContent =
+                "پوشه متصل است";
+            element.classList.add("connected");
+            element.classList.remove("disconnected");
+        } else {
+            element.textContent =
+                "پوشه متصل نیست";
+            element.classList.add("disconnected");
+            element.classList.remove("connected");
+        }
+    });
+}
+
+/* =========================================================
+   Products
+   ========================================================= */
+
+function getProduct(id) {
+    return appData.products.find(
+        product =>
+            String(product.id) === String(id)
+    );
+}
+
+function findProductByBarcode(barcode) {
+    const code =
+        String(barcode || "").trim();
+
+    if (!code) {
+        return null;
+    }
+
+    return appData.products.find(
+        product =>
+            String(product.barcode || "") === code
+    ) || null;
+}
+
+function getStock(productId) {
+    return Number(
+        appData.inventory[productId] || 0
+    );
+}
+
+function addProduct(productData) {
+    const barcode =
+        String(productData.barcode || "").trim();
+
+    const name =
+        String(productData.name || "").trim();
+
+    if (!name) {
         showToast(
             "نام کالا را وارد کنید."
         );
 
-        return;
+        return null;
     }
 
-    const existingByBarcode =
-        getProductByBarcode(barcode);
-
-    if (
-        existingByBarcode &&
-        existingByBarcode.id !== id
-    ) {
-
+    if (!barcode) {
         showToast(
-            "این بارکد قبلاً برای یک کالا ثبت شده است."
+            "بارکد را وارد کنید."
         );
 
-        return;
+        return null;
     }
 
     const existing =
-        id
-            ? getProduct(id)
-            : null;
-
-    const productId =
-        id || generateId();
-
-    const product = {
-
-        id: productId,
-
-        barcode,
-
-        name,
-
-        category,
-
-        purchasePrice,
-
-        salePrice,
-
-        unit,
-
-        createdAt:
-            existing?.createdAt ||
-            nowISO(),
-
-        updatedAt:
-            nowISO()
-    };
+        findProductByBarcode(barcode);
 
     if (existing) {
-
-        database.products =
-            database.products.map(
-                item =>
-                    item.id === productId
-                        ? product
-                        : item
-            );
-
-    } else {
-
-        database.products.push(
-            product
+        showToast(
+            "این بارکد قبلاً ثبت شده است."
         );
 
-        database.inventory[productId] =
-            initialQuantity;
+        return null;
     }
 
-    await saveDatabase();
+    const product = {
+        id: uid(),
+        barcode: barcode,
+        name: name,
+        price1: Number(
+            productData.price1 || 0
+        ),
+        price2:
+            productData.price2 === "" ||
+            productData.price2 == null
+                ? null
+                : Number(productData.price2),
+        created_at:
+            new Date().toISOString(),
+        updated_at:
+            new Date().toISOString()
+    };
+
+    appData.products.push(product);
+
+    appData.inventory[product.id] =
+        Number(productData.stock || 0);
+
+    return product;
+}
+
+async function saveProductForm() {
+    const form = $("productForm");
+
+    if (!form) {
+        return;
+    }
+
+    const formData =
+        new FormData(form);
+
+    const product =
+        addProduct({
+            barcode:
+                formData.get("barcode"),
+            name:
+                formData.get("name"),
+            price1:
+                formData.get("price1"),
+            price2:
+                formData.get("price2"),
+            stock:
+                formData.get("stock")
+        });
+
+    if (!product) {
+        return;
+    }
+
+    await saveLocalDatabase();
 
     closeModal("productModal");
 
-    if (event.target?.reset) {
-        event.target.reset();
-    }
+    form.reset();
 
-    const productIdInput =
-        document.getElementById(
-            "productId"
-        );
-
-    if (productIdInput) {
-        productIdInput.value = "";
-    }
-
-    const quantityInput =
-        document.getElementById(
-            "initialQuantity"
-        );
-
-    if (quantityInput) {
-        quantityInput.value = "0";
-    }
-
-    await refreshAll();
+    renderAll();
 
     showToast(
-        existing
-            ? "کالا ویرایش شد."
-            : "کالا با موفقیت اضافه شد."
+        "کالا با موفقیت اضافه شد."
     );
 }
 
+async function deleteProduct(productId) {
+    const product =
+        getProduct(productId);
 
-/* ============================================================
-   PRODUCT LIST
-   ============================================================ */
+    if (!product) {
+        return;
+    }
 
-function renderProducts(search = "") {
-
-    const container =
-        document.getElementById(
-            "productsList"
+    const ok =
+        confirm(
+            `کالای «${product.name}» حذف شود؟`
         );
 
-    if (!container) return;
+    if (!ok) {
+        return;
+    }
 
-    const query =
-        String(search ?? "")
+    appData.products =
+        appData.products.filter(
+            item =>
+                String(item.id) !==
+                String(productId)
+        );
+
+    delete appData.inventory[productId];
+
+    await saveLocalDatabase();
+
+    renderAll();
+
+    showToast(
+        "کالا حذف شد."
+    );
+}
+
+/* =========================================================
+   Inventory
+   ========================================================= */
+
+async function changeStock(productId, amount) {
+    const product =
+        getProduct(productId);
+
+    if (!product) {
+        return;
+    }
+
+    const current =
+        getStock(productId);
+
+    const next =
+        Math.max(
+            0,
+            current + Number(amount)
+        );
+
+    appData.inventory[productId] =
+        next;
+
+    product.updated_at =
+        new Date().toISOString();
+
+    await saveLocalDatabase();
+
+    renderAll();
+}
+
+/* =========================================================
+   Sales / Cart
+   ========================================================= */
+
+function addToCart(product, priceType = 1) {
+    if (!product) {
+        return;
+    }
+
+    const stock =
+        getStock(product.id);
+
+    if (stock <= 0) {
+        showToast(
+            "موجودی این کالا تمام شده است."
+        );
+
+        return;
+    }
+
+    const price =
+        priceType === 2 &&
+        product.price2 != null
+            ? Number(product.price2)
+            : Number(product.price1 || 0);
+
+    const existing =
+        cart.find(
+            item =>
+                item.productId ===
+                product.id
+        );
+
+    if (existing) {
+        if (
+            existing.quantity >= stock
+        ) {
+            showToast(
+                "بیشتر از موجودی نمی‌توانید بفروشید."
+            );
+
+            return;
+        }
+
+        existing.quantity++;
+    } else {
+        cart.push({
+            productId: product.id,
+            name: product.name,
+            price: price,
+            quantity: 1,
+            priceType: priceType
+        });
+    }
+
+    renderCart();
+}
+
+function removeFromCart(productId) {
+    cart =
+        cart.filter(
+            item =>
+                String(item.productId) !==
+                String(productId)
+        );
+
+    renderCart();
+}
+
+function clearCart() {
+    cart = [];
+    renderCart();
+}
+
+async function completeSale() {
+    if (!cart.length) {
+        showToast(
+            "سبد فروش خالی است."
+        );
+
+        return;
+    }
+
+    const saleId = uid();
+
+    let total = 0;
+
+    const saleItems = [];
+
+    for (const item of cart) {
+        const product =
+            getProduct(item.productId);
+
+        if (!product) {
+            continue;
+        }
+
+        const stock =
+            getStock(product.id);
+
+        if (item.quantity > stock) {
+            showToast(
+                `موجودی «${product.name}» کافی نیست.`
+            );
+
+            return;
+        }
+
+        const itemTotal =
+            item.quantity *
+            item.price;
+
+        total += itemTotal;
+
+        appData.inventory[product.id] =
+            stock - item.quantity;
+
+        saleItems.push({
+            id: uid(),
+            sale_id: saleId,
+            product_id: product.id,
+            quantity: item.quantity,
+            price: item.price,
+            total: itemTotal
+        });
+    }
+
+    appData.sales.push({
+        id: saleId,
+        date: new Date().toISOString(),
+        total: total
+    });
+
+    appData.sale_items.push(
+        ...saleItems
+    );
+
+    await saveLocalDatabase();
+
+    cart = [];
+
+    renderAll();
+
+    showToast(
+        "فروش با موفقیت ثبت شد."
+    );
+}
+
+/* =========================================================
+   Scanner - Binary Eye
+   ========================================================= */
+
+function openBinaryEye(callbackType) {
+    try {
+        localStorage.setItem(
+            "bizadshop_scanner_callback",
+            callbackType
+        );
+
+        /*
+          Binary Eye deep link.
+          نتیجه اسکن در صورت پشتیبانی مرورگر/اپ
+          از طریق URL به سایت برمی‌گردد.
+        */
+
+        const returnUrl =
+            window.location.href.split("#")[0];
+
+        const binaryEyeUrl =
+            "binaryeye://scan?return=" +
+            encodeURIComponent(
+                returnUrl
+            );
+
+        window.location.href =
+            binaryEyeUrl;
+    } catch (error) {
+        console.error(error);
+
+        showToast(
+            "باز کردن اسکنر انجام نشد."
+        );
+    }
+}
+
+function handleScannerResult(value) {
+    if (!value) {
+        return;
+    }
+
+    const code =
+        String(value).trim();
+
+    const callback =
+        localStorage.getItem(
+            "bizadshop_scanner_callback"
+        );
+
+    localStorage.removeItem(
+        "bizadshop_scanner_callback"
+    );
+
+    if (callback === "sale") {
+        const input =
+            $("saleBarcode");
+
+        if (input) {
+            input.value = code;
+        }
+
+        searchSaleProduct(code);
+        return;
+    }
+
+    if (
+        callback === "product" ||
+        callback === "receive"
+    ) {
+        const input =
+            $("productBarcode");
+
+        if (input) {
+            input.value = code;
+        }
+
+        const receiveInput =
+            $("receiveBarcode");
+
+        if (receiveInput) {
+            receiveInput.value = code;
+        }
+
+        findBarcodeForProduct(code);
+    }
+}
+
+function checkScannerReturn() {
+    try {
+        const params =
+            new URLSearchParams(
+                window.location.search
+            );
+
+        const possibleValues = [
+            params.get("barcode"),
+            params.get("result"),
+            params.get("text"),
+            params.get("data"),
+            params.get("code")
+        ];
+
+        for (
+            const value of possibleValues
+        ) {
+            if (value) {
+                handleScannerResult(value);
+                break;
+            }
+        }
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+/* =========================================================
+   Search
+   ========================================================= */
+
+function searchSaleProduct(code) {
+    const product =
+        findProductByBarcode(code);
+
+    if (!product) {
+        showToast(
+            "کالایی با این بارکد پیدا نشد."
+        );
+
+        return;
+    }
+
+    if (
+        product.price2 != null &&
+        Number(product.price2) > 0
+    ) {
+        const useSecond =
+            confirm(
+                `قیمت ۱: ${money(product.price1)}\n` +
+                `قیمت ۲: ${money(product.price2)}\n\n` +
+                `برای قیمت ۲ OK بزنید.`
+            );
+
+        addToCart(
+            product,
+            useSecond ? 2 : 1
+        );
+    } else {
+        addToCart(
+            product,
+            1
+        );
+    }
+
+    const input =
+        $("saleBarcode");
+
+    if (input) {
+        input.value = "";
+    }
+}
+
+function findBarcodeForProduct(code) {
+    const product =
+        findProductByBarcode(code);
+
+    if (product) {
+        showToast(
+            `این بارکد قبلاً برای «${product.name}» ثبت شده است.`
+        );
+    } else {
+        showToast(
+            "بارکد آماده ثبت کالا است."
+        );
+    }
+}
+
+/* =========================================================
+   Rendering
+   ========================================================= */
+
+function renderDashboard() {
+    const productCount =
+        appData.products.length;
+
+    let stockCount = 0;
+
+    Object.values(
+        appData.inventory
+    ).forEach(value => {
+        stockCount += Number(value) || 0;
+    });
+
+    const today =
+        todayKey();
+
+    const todaySales =
+        appData.sales.filter(
+            sale =>
+                String(sale.date || "")
+                    .slice(0, 10) === today
+        );
+
+    let todayTotal = 0;
+
+    todaySales.forEach(
+        sale => {
+            todayTotal +=
+                Number(sale.total) || 0;
+        }
+    );
+
+    setText(
+        "dashboardProductCount",
+        productCount
+    );
+
+    setText(
+        "dashboardStockCount",
+        stockCount
+    );
+
+    setText(
+        "dashboardSalesCount",
+        todaySales.length
+    );
+
+    setText(
+        "dashboardSalesTotal",
+        money(todayTotal)
+    );
+}
+
+function renderProducts() {
+    const container =
+        $("productsList");
+
+    if (!container) {
+        return;
+    }
+
+    const searchInput =
+        $("productSearch");
+
+    const search =
+        String(
+            searchInput
+                ? searchInput.value
+                : ""
+        )
             .trim()
             .toLowerCase();
 
-    let products =
-        getProducts();
-
-    if (query) {
-
-        products =
-            products.filter(
-                product => {
-
-                    const name =
-                        String(
-                            product.name ?? ""
-                        ).toLowerCase();
-
-                    const barcode =
-                        String(
-                            product.barcode ?? ""
-                        ).toLowerCase();
-
-                    return (
-                        name.includes(query) ||
-                        barcode.includes(query)
-                    );
+    const products =
+        appData.products.filter(
+            product => {
+                if (!search) {
+                    return true;
                 }
-            );
-    }
+
+                return (
+                    String(product.name || "")
+                        .toLowerCase()
+                        .includes(search) ||
+                    String(product.barcode || "")
+                        .toLowerCase()
+                        .includes(search)
+                );
+            }
+        );
 
     if (!products.length) {
-
-        container.innerHTML = `
-            <div class="empty">
-                ${
-                    query
-                        ? "کالایی پیدا نشد."
-                        : "هنوز کالایی ثبت نشده است."
-                }
-            </div>
-        `;
+        container.innerHTML =
+            `<div class="empty-state">
+                کالایی ثبت نشده است.
+            </div>`;
 
         return;
     }
 
     container.innerHTML =
-        products.map(
-            product => {
-
-                const quantity =
-                    getQuantity(
-                        product.id
-                    );
+        products
+            .map(product => {
+                const stock =
+                    getStock(product.id);
 
                 return `
                     <div class="product-card">
-
                         <div class="product-info">
-
                             <strong>
                                 ${escapeHTML(product.name)}
                             </strong>
@@ -1165,666 +1358,738 @@ function renderProducts(search = "") {
                             <small>
                                 بارکد:
                                 ${escapeHTML(product.barcode)}
-                                ${
-                                    product.category
-                                        ? " • " +
-                                          escapeHTML(
-                                              product.category
-                                          )
-                                        : ""
-                                }
                             </small>
 
-                            <div class="product-price">
-                                ${formatMoney(
-                                    product.salePrice
-                                )}
-                            </div>
+                            <small>
+                                موجودی:
+                                ${stock}
+                            </small>
 
-                        </div>
+                            <small>
+                                قیمت:
+                                ${money(product.price1)}
+                            </small>
 
-                        <div class="product-stock">
-                            موجودی:
-                            ${quantity}
-                            ${escapeHTML(
-                                product.unit || "عدد"
-                            )}
+                            ${
+                                product.price2 != null
+                                    ? `
+                                        <small>
+                                            قیمت ۲:
+                                            ${money(product.price2)}
+                                        </small>
+                                      `
+                                    : ""
+                            }
                         </div>
 
                         <div class="product-actions">
-
                             <button
-                                class="small-button primary"
                                 type="button"
-                                data-edit-product="${product.id}"
-                            >
-                                ویرایش
-                            </button>
-
-                            <button
                                 class="small-button"
-                                type="button"
                                 data-stock-product="${product.id}"
                             >
-                                موجودی
+                                تغییر موجودی
                             </button>
 
                             <button
-                                class="small-button danger"
                                 type="button"
+                                class="small-button"
                                 data-delete-product="${product.id}"
                             >
                                 حذف
                             </button>
-
                         </div>
-
                     </div>
                 `;
-            }
-        ).join("");
+            })
+            .join("");
 }
 
+function renderInventory() {
+    const container =
+        $("inventoryList");
 
-/* ============================================================
-   EDIT PRODUCT
-   ============================================================ */
-
-function editProduct(id) {
-
-    const product =
-        getProduct(id);
-
-    if (!product) return;
-
-    const title =
-        document.getElementById(
-            "productModalTitle"
-        );
-
-    if (title) {
-        title.textContent =
-            "ویرایش کالا";
-    }
-
-    document.getElementById(
-        "productId"
-    ).value =
-        product.id;
-
-    document.getElementById(
-        "productBarcode"
-    ).value =
-        product.barcode || "";
-
-    document.getElementById(
-        "productName"
-    ).value =
-        product.name || "";
-
-    document.getElementById(
-        "productCategory"
-    ).value =
-        product.category || "";
-
-    document.getElementById(
-        "purchasePrice"
-    ).value =
-        product.purchasePrice || 0;
-
-    document.getElementById(
-        "salePrice"
-    ).value =
-        product.salePrice || 0;
-
-    document.getElementById(
-        "productUnit"
-    ).value =
-        product.unit || "عدد";
-
-    document.getElementById(
-        "initialQuantity"
-    ).value =
-        getQuantity(product.id);
-
-    openModal("productModal");
-}
-
-
-/* ============================================================
-   DELETE PRODUCT
-   ============================================================ */
-
-async function deleteProduct(id) {
-
-    const product =
-        getProduct(id);
-
-    if (!product) return;
-
-    const confirmed =
-        confirm(
-            `کالای «${product.name}» حذف شود؟`
-        );
-
-    if (!confirmed) return;
-
-    database.products =
-        database.products.filter(
-            item => item.id !== id
-        );
-
-    delete database.inventory[id];
-
-    database.sale_items =
-        database.sale_items.filter(
-            item => item.product_id !== id
-        );
-
-    await saveDatabase();
-
-    await refreshAll();
-
-    showToast(
-        "کالا حذف شد."
-    );
-}
-
-
-/* ============================================================
-   INVENTORY MODAL
-   ============================================================ */
-
-function openStockModal(id) {
-
-    const product =
-        getProduct(id);
-
-    if (!product) return;
-
-    document.getElementById(
-        "stockProductId"
-    ).value =
-        id;
-
-    document.getElementById(
-        "stockProductName"
-    ).textContent =
-        `${product.name} — موجودی فعلی: ${getQuantity(id)}`;
-
-    document.getElementById(
-        "stockAction"
-    ).value =
-        "increase";
-
-    document.getElementById(
-        "stockAmount"
-    ).value =
-        "";
-
-    openModal("stockModal");
-}
-
-
-async function handleStockSubmit(event) {
-
-    event.preventDefault();
-
-    const productId =
-        document.getElementById(
-            "stockProductId"
-        ).value;
-
-    const action =
-        document.getElementById(
-            "stockAction"
-        ).value;
-
-    const amount =
-        Number(
-            document.getElementById(
-                "stockAmount"
-            ).value
-        );
-
-    if (!productId) return;
-
-    if (
-        !Number.isFinite(amount) ||
-        amount < 0
-    ) {
-
-        showToast(
-            "مقدار وارد شده صحیح نیست."
-        );
-
+    if (!container) {
         return;
     }
 
-    const current =
-        getQuantity(productId);
+    const searchInput =
+        $("inventorySearch");
 
-    let next =
-        current;
-
-    if (action === "increase") {
-
-        next =
-            current + amount;
-
-    } else if (action === "decrease") {
-
-        next =
-            Math.max(
-                0,
-                current - amount
-            );
-
-    } else if (action === "set") {
-
-        next =
-            amount;
-    }
-
-    setQuantity(
-        productId,
-        next
-    );
-
-    await saveDatabase();
-
-    closeModal("stockModal");
-
-    await refreshAll();
-
-    showToast(
-        "موجودی ذخیره شد."
-    );
-}
-
-
-/* ============================================================
-   INVENTORY LIST
-   ============================================================ */
-
-function renderInventory(search = "") {
-
-    const container =
-        document.getElementById(
-            "inventoryList"
-        );
-
-    if (!container) return;
-
-    const query =
-        String(search ?? "")
+    const search =
+        String(
+            searchInput
+                ? searchInput.value
+                : ""
+        )
             .trim()
             .toLowerCase();
 
-    let products =
-        getProducts();
-
-    if (query) {
-
-        products =
-            products.filter(
-                product => {
-
-                    const name =
-                        String(
-                            product.name ?? ""
-                        ).toLowerCase();
-
-                    const barcode =
-                        String(
-                            product.barcode ?? ""
-                        ).toLowerCase();
-
-                    return (
-                        name.includes(query) ||
-                        barcode.includes(query)
-                    );
+    const products =
+        appData.products.filter(
+            product => {
+                if (!search) {
+                    return true;
                 }
-            );
-    }
+
+                return (
+                    String(product.name || "")
+                        .toLowerCase()
+                        .includes(search) ||
+                    String(product.barcode || "")
+                        .toLowerCase()
+                        .includes(search)
+                );
+            }
+        );
 
     if (!products.length) {
-
-        container.innerHTML = `
-            <div class="empty">
-                ${
-                    query
-                        ? "کالایی پیدا نشد."
-                        : "موجودی خالی است."
-                }
-            </div>
-        `;
+        container.innerHTML =
+            `<div class="empty-state">
+                موجودی خالی است.
+            </div>`;
 
         return;
     }
 
     container.innerHTML =
-        products.map(
-            product => {
-
-                const quantity =
-                    getQuantity(
-                        product.id
-                    );
-
-                const low =
-                    quantity <= 5;
+        products
+            .map(product => {
+                const stock =
+                    getStock(product.id);
 
                 return `
-                    <div class="product-card">
-
-                        <div class="product-info">
-
+                    <div class="inventory-card">
+                        <div>
                             <strong>
-                                ${escapeHTML(
-                                    product.name
-                                )}
+                                ${escapeHTML(product.name)}
                             </strong>
 
-                            <small>
-                                ${escapeHTML(
-                                    product.barcode
-                                )}
-                            </small>
-
+                            <div>
+                                موجودی:
+                                <b>${stock}</b>
+                            </div>
                         </div>
 
-                        <div
-                            class="product-stock"
-                            style="
-                                color:
-                                ${
-                                    low
-                                        ? "var(--danger)"
-                                        : "var(--text-light)"
-                                };
-                                font-weight:
-                                ${
-                                    low
-                                        ? "800"
-                                        : "normal"
-                                };
-                            "
-                        >
-                            ${quantity}
-                            ${escapeHTML(
-                                product.unit || "عدد"
-                            )}
+                        <div class="inventory-actions">
+                            <button
+                                type="button"
+                                class="small-button"
+                                data-stock-minus="${product.id}"
+                            >
+                                −
+                            </button>
+
+                            <button
+                                type="button"
+                                class="small-button"
+                                data-stock-plus="${product.id}"
+                            >
+                                +
+                            </button>
                         </div>
-
-                        <button
-                            class="small-button"
-                            type="button"
-                            data-stock-product="${product.id}"
-                        >
-                            تغییر موجودی
-                        </button>
-
                     </div>
                 `;
-            }
-        ).join("");
+            })
+            .join("");
 }
-
-
-/* ============================================================
-   SALE / CART
-   ============================================================ */
-
-function clearCart() {
-
-    cart = [];
-
-    renderCart();
-}
-
-
-function getCartItem(productId) {
-
-    return cart.find(
-        item => item.productId === productId
-    );
-}
-
-
-function addToCart(product, quantity = 1) {
-
-    if (!product) return;
-
-    const amount =
-        Number(quantity);
-
-    if (
-        !Number.isFinite(amount) ||
-        amount <= 0
-    ) {
-        showToast(
-            "تعداد صحیح نیست."
-        );
-        return;
-    }
-
-    const stock =
-        getQuantity(product.id);
-
-    const existing =
-        getCartItem(product.id);
-
-    const currentCartQuantity =
-        existing
-            ? existing.quantity
-            : 0;
-
-    if (
-        currentCartQuantity + amount >
-        stock
-    ) {
-
-        showToast(
-            "موجودی کافی نیست."
-        );
-
-        return;
-    }
-
-    if (existing) {
-
-        existing.quantity += amount;
-
-    } else {
-
-        cart.push({
-            productId: product.id,
-            quantity: amount,
-            price: Number(
-                product.salePrice
-            ) || 0
-        });
-    }
-
-    renderCart();
-
-    showToast(
-        "کالا به سبد اضافه شد."
-    );
-}
-
-
-function removeFromCart(productId) {
-
-    cart =
-        cart.filter(
-            item =>
-                item.productId !== productId
-        );
-
-    renderCart();
-}
-
-
-function changeCartQuantity(
-    productId,
-    delta
-) {
-
-    const item =
-        getCartItem(productId);
-
-    if (!item) return;
-
-    const product =
-        getProduct(productId);
-
-    if (!product) return;
-
-    const next =
-        item.quantity + delta;
-
-    if (next <= 0) {
-
-        removeFromCart(productId);
-
-        return;
-    }
-
-    if (
-        next >
-        getQuantity(productId)
-    ) {
-
-        showToast(
-            "موجودی کافی نیست."
-        );
-
-        return;
-    }
-
-    item.quantity =
-        next;
-
-    renderCart();
-}
-
-
-function getCartTotal() {
-
-    return cart.reduce(
-        (total, item) => {
-
-            return total +
-                (
-                    Number(item.price) *
-                    Number(item.quantity)
-                );
-
-        },
-        0
-    );
-}
-
 
 function renderCart() {
-
     const container =
-        document.getElementById(
-            "cartItems"
-        );
+        $("cartItems");
 
     const totalElement =
-        document.getElementById(
-            "cartTotal"
-        );
+        $("cartTotal");
 
-    if (!container) return;
+    if (!container) {
+        return;
+    }
 
     if (!cart.length) {
-
-        container.innerHTML = `
-            <div class="empty">
+        container.innerHTML =
+            `<div class="empty-state">
                 سبد فروش خالی است.
-            </div>
-        `;
+            </div>`;
 
         if (totalElement) {
             totalElement.textContent =
-                formatMoney(0);
+                money(0);
         }
 
         return;
     }
 
+    let total = 0;
+
     container.innerHTML =
-        cart.map(
-            item => {
+        cart
+            .map(item => {
+                const itemTotal =
+                    item.quantity *
+                    item.price;
 
-                const product =
-                    getProduct(
-                        item.productId
-                    );
-
-                if (!product) {
-                    return "";
-                }
-
-                const total =
-                    Number(item.price) *
-                    Number(item.quantity);
+                total += itemTotal;
 
                 return `
                     <div class="cart-item">
+                        <div>
+                            <strong>
+                                ${escapeHTML(item.name)}
+                            </strong>
+
+                            <div>
+                                ${item.quantity}
+                                ×
+                                ${money(item.price)}
+                            </div>
+                        </div>
 
                         <div>
                             <strong>
-                                ${escapeHTML(
-                                    product.name
-                                )}
+                                ${money(itemTotal)}
                             </strong>
 
-                            <small>
-                                ${item.quantity}
-                                ×
-                                ${formatMoney(
-                                    item.price
-                                )}
-                            </small>
-                        </div>
-
-                        <div class="cart-item-actions">
-
                             <button
                                 type="button"
                                 class="small-button"
-                                data-cart-minus="${product.id}"
-                            >
-                                −
-                            </button>
-
-                            <span>
-                                ${item.quantity}
-                            </span>
-
-                            <button
-                                type="button"
-                                class="small-button"
-                                data-cart-plus="${product.id}"
-                            >
-                                +
-                            </button>
-
-                            <button
-                                type="button"
-                                class="small-button danger"
-                                data-cart-remove="${product.id}"
+                                data-remove-cart="${item.productId}"
                             >
                                 حذف
                             </button>
-
                         </div>
+                    </div>
+                `;
+            })
+            .join("");
 
-                        <div>
-                            ${ز
+    if (totalElement) {
+        totalElement.textContent =
+            money(total);
+    }
+}
+
+function renderAll() {
+    if (!appData) {
+        return;
+    }
+
+    renderDashboard();
+    renderProducts();
+    renderInventory();
+    renderCart();
+}
+
+/* =========================================================
+   Page Navigation
+   ========================================================= */
+
+function showPage(pageName) {
+    currentPage =
+        pageName;
+
+    const pages = [
+        "dashboard",
+        "products",
+        "sale",
+        "inventory"
+    ];
+
+    pages.forEach(page => {
+        const element =
+            $("page-" + page);
+
+        if (!element) {
+            return;
+        }
+
+        if (page === pageName) {
+            element.style.display =
+                "block";
+            element.classList.add("active");
+        } else {
+            element.style.display =
+                "none";
+            element.classList.remove("active");
+        }
+    });
+
+    document
+        .querySelectorAll(
+            "[data-page]"
+        )
+        .forEach(button => {
+            const target =
+                button.dataset.page;
+
+            if (
+                target === pageName
+            ) {
+                button.classList.add(
+                    "active"
+                );
+            } else {
+                button.classList.remove(
+                    "active"
+                );
+            }
+        });
+}
+
+/* =========================================================
+   Modals
+   ========================================================= */
+
+function openModal(id) {
+    const modal = $(id);
+
+    if (!modal) {
+        return;
+    }
+
+    modal.style.display =
+        "flex";
+
+    modal.classList.add("open");
+}
+
+function closeModal(id) {
+    const modal = $(id);
+
+    if (!modal) {
+        return;
+    }
+
+    modal.style.display =
+        "none";
+
+    modal.classList.remove("open");
+}
+
+/* =========================================================
+   Helpers
+   ========================================================= */
+
+function setText(id, value) {
+    const element = $(id);
+
+    if (element) {
+        element.textContent =
+            String(value);
+    }
+}
+
+/* =========================================================
+   Event Handlers
+   ========================================================= */
+
+function setupEventListeners() {
+
+    /* Navigation */
+
+    document.addEventListener(
+        "click",
+        async function (event) {
+
+            const pageButton =
+                event.target.closest(
+                    "[data-page]"
+                );
+
+            if (pageButton) {
+                const page =
+                    pageButton.dataset.page;
+
+                if (page) {
+                    showPage(page);
+                }
+
+                return;
+            }
+
+            /* Folder */
+
+            const folderButton =
+                event.target.closest(
+                    "#connectFolderBtn, #chooseFolderBtn, #folderBtn, #settingsBtn"
+                );
+
+            if (folderButton) {
+                await chooseFolder();
+                return;
+            }
+
+            const reconnectButton =
+                event.target.closest(
+                    "#reconnectFolderBtn"
+                );
+
+            if (reconnectButton) {
+                await reconnectFolder();
+                return;
+            }
+
+            /* Add Product */
+
+            const addButton =
+                event.target.closest(
+                    "#addProductBtn"
+                );
+
+            if (addButton) {
+                openModal(
+                    "productModal"
+                );
+
+                return;
+            }
+
+            /* Close */
+
+            const closeButton =
+                event.target.closest(
+                    "[data-close-modal]"
+                );
+
+            if (closeButton) {
+                closeModal(
+                    closeButton.dataset
+                        .closeModal
+                );
+
+                return;
+            }
+
+            /* Product Scanner */
+
+            const productScanner =
+                event.target.closest(
+                    "#productScanBarcodeBtn, #scanProductBarcodeBtn"
+                );
+
+            if (productScanner) {
+                openBinaryEye(
+                    "product"
+                );
+
+                return;
+            }
+
+            /* Sale Scanner */
+
+            const saleScanner =
+                event.target.closest(
+                    "#saleScanBarcodeBtn, #scanSaleBarcodeBtn"
+                );
+
+            if (saleScanner) {
+                openBinaryEye(
+                    "sale"
+                );
+
+                return;
+            }
+
+            /* Search Sale */
+
+            const saleSearchButton =
+                event.target.closest(
+                    "#saleSearchBtn"
+                );
+
+            if (saleSearchButton) {
+                const input =
+                    $("saleBarcode");
+
+                if (input) {
+                    searchSaleProduct(
+                        input.value
+                    );
+                }
+
+                return;
+            }
+
+            /* Complete Sale */
+
+            const completeSaleButton =
+                event.target.closest(
+                    "#completeSaleBtn"
+                );
+
+            if (completeSaleButton) {
+                await completeSale();
+                return;
+            }
+
+            /* Clear Cart */
+
+            const clearCartButton =
+                event.target.closest(
+                    "#clearCartBtn"
+                );
+
+            if (clearCartButton) {
+                clearCart();
+                return;
+            }
+
+            /* Stock Plus */
+
+            const plusButton =
+                event.target.closest(
+                    "[data-stock-plus]"
+                );
+
+            if (plusButton) {
+                await changeStock(
+                    plusButton.dataset
+                        .stockPlus,
+                    1
+                );
+
+                return;
+            }
+
+            /* Stock Minus */
+
+            const minusButton =
+                event.target.closest(
+                    "[data-stock-minus]"
+                );
+
+            if (minusButton) {
+                await changeStock(
+                    minusButton.dataset
+                        .stockMinus,
+                    -1
+                );
+
+                return;
+            }
+
+            /* Product Stock */
+
+            const stockButton =
+                event.target.closest(
+                    "[data-stock-product]"
+                );
+
+            if (stockButton) {
+                const id =
+                    stockButton.dataset
+                        .stockProduct;
+
+                openStockModal(id);
+
+                return;
+            }
+
+            /* Delete Product */
+
+            const deleteButton =
+                event.target.closest(
+                    "[data-delete-product]"
+                );
+
+            if (deleteButton) {
+                await deleteProduct(
+                    deleteButton.dataset
+                        .deleteProduct
+                );
+
+                return;
+            }
+
+            /* Remove Cart */
+
+            const removeCartButton =
+                event.target.closest(
+                    "[data-remove-cart]"
+                );
+
+            if (removeCartButton) {
+                removeFromCart(
+                    removeCartButton.dataset
+                        .removeCart
+                );
+
+                return;
+            }
+        }
+    );
+
+    /* Product Form */
+
+    const productForm =
+        $("productForm");
+
+    if (productForm) {
+        productForm.addEventListener(
+            "submit",
+            async function (event) {
+                event.preventDefault();
+
+                await saveProductForm();
+            }
+        );
+    }
+
+    /* Stock Form */
+
+    const stockForm =
+        $("stockForm");
+
+    if (stockForm) {
+        stockForm.addEventListener(
+            "submit",
+            async function (event) {
+                event.preventDefault();
+
+                await saveStockForm();
+            }
+        );
+    }
+
+    /* Product Search */
+
+    const productSearch =
+        $("productSearch");
+
+    if (productSearch) {
+        productSearch.addEventListener(
+            "input",
+            renderProducts
+        );
+    }
+
+    /* Inventory Search */
+
+    const inventorySearch =
+        $("inventorySearch");
+
+    if (inventorySearch) {
+        inventorySearch.addEventListener(
+            "input",
+            renderInventory
+        );
+    }
+
+    /* Sale Barcode Enter */
+
+    const saleBarcode =
+        $("saleBarcode");
+
+    if (saleBarcode) {
+        saleBarcode.addEventListener(
+            "keydown",
+            function (event) {
+                if (
+                    event.key ===
+                    "Enter"
+                ) {
+                    event.preventDefault();
+
+                    searchSaleProduct(
+                        saleBarcode.value
+                    );
+                }
+            }
+        );
+    }
+}
+
+/* =========================================================
+   Stock Modal
+   ========================================================= */
+
+let selectedStockProductId = null;
+
+function openStockModal(productId) {
+    const product =
+        getProduct(productId);
+
+    if (!product) {
+        return;
+    }
+
+    selectedStockProductId =
+        productId;
+
+    setText(
+        "stockProductName",
+        product.name
+    );
+
+    setText(
+        "stockCurrentValue",
+        getStock(productId)
+    );
+
+    const amount =
+        $("stockAmount");
+
+    if (amount) {
+        amount.value = "";
+    }
+
+    openModal(
+        "stockModal"
+    );
+}
+
+async function saveStockForm() {
+    if (!selectedStockProductId) {
+        return;
+    }
+
+    const amountInput =
+        $("stockAmount");
+
+    const typeInput =
+        $("stockType");
+
+    const amount =
+        Number(
+            amountInput
+                ? amountInput.value
+                : 0
+        );
+
+    if (!amount || amount <= 0) {
+        showToast(
+            "مقدار را وارد کنید."
+        );
+
+        return;
+    }
+
+    let change =
+        amount;
+
+    if (
+        typeInput &&
+        (
+            typeInput.value ===
+            "remove" ||
+            typeInput.value ===
+            "out"
+        )
+    ) {
+        change =
+            -amount;
+    }
+
+    await changeStock(
+        selectedStockProductId,
+        change
+    );
+
+    selectedStockProductId =
+        null;
+
+    closeModal(
+        "stockModal"
+    );
+}
+
+/* =========================================================
