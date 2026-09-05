@@ -1,254 +1,143 @@
-<!DOCTYPE html><html lang="fa" dir="rtl">
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f172a">
 <title>BizadShop</title>
 <style>
 *{box-sizing:border-box}
-html,body{margin:0;padding:0;background:#f5f7f8;color:#17233c;font-family:Tahoma,Arial,sans-serif}
-body{min-height:100vh}
-.app{width:100%;max-width:520px;margin:auto;min-height:100vh;background:#f5f7f8}
-.header{height:154px;position:fixed;top:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;z-index:50;background:linear-gradient(180deg,#d92f38 0%,#e55b61 48%,rgba(245,247,248,0) 100%);padding:12px 14px 0}
-.header-top{height:45px;display:grid;grid-template-columns:45px 1fr 45px;align-items:center;direction:ltr}
-.connection{grid-column:1;display:flex;align-items:center;justify-content:flex-start}
-.connection-dot{width:13px;height:13px;border-radius:50%;background:#777;box-shadow:0 0 0 3px rgba(255,255,255,.2)}
-.connection-dot.connected{background:#19c967}
-.shop-name{grid-column:2;text-align:center;color:#fff;font-size:19px;font-weight:bold;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.menu-button{grid-column:3;width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,.15);color:#fff;font-size:28px;line-height:35px}
-.connect-button{display:block;margin:8px auto 0;height:38px;padding:0 18px;border-radius:10px;background:#fff;color:#17233c;font-size:13px}
-.connect-button.connected{color:#15964b}
-.content{padding:170px 14px 95px}
-.page{display:none}
-.page.active{display:block}
-.page-title{margin:0 0 18px;font-size:24px;font-weight:800}
-.lock-screen{position:fixed;top:154px;bottom:0;left:0;right:0;z-index:40;background:#f5f7f8;display:flex;justify-content:center;padding-top:55px}
-.lock-screen.hidden{display:none}
-.lock-box{width:calc(100% - 35px);height:max-content;background:#fff;border-radius:18px;padding:25px 18px;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,.07)}
-.lock-box strong{display:block;font-size:17px;margin-bottom:8px}
-.lock-box span{font-size:12px;color:#777}
-.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.stat-card,.add-product-card{min-height:108px;background:#fff;border-radius:16px;padding:15px;box-shadow:0 5px 20px rgba(23,35,60,.06)}
-.stat-title{font-size:12px;color:#777;margin-bottom:9px}
-.stat-value{font-size:18px;font-weight:800}
-.stat-sub{font-size:11px;color:#888;margin-top:8px}
-.stat-danger .stat-title,.stat-danger .stat-value{color:#d92f38}
-.add-product-card{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;cursor:pointer}
-.add-product-plus{font-size:45px;line-height:42px;color:#16a05a;font-weight:300}
-.add-product-text{font-size:13px;font-weight:bold;margin-top:6px}
-.section{background:#fff;border-radius:16px;padding:15px;box-shadow:0 5px 20px rgba(23,35,60,.06);margin-top:13px}
-.section-title{font-size:15px;font-weight:800;margin-bottom:13px}
-.form-group{margin-bottom:11px}
-.form-group label{display:block;font-size:12px;color:#555;margin-bottom:6px}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:9px}
-.form-control{width:100%;height:44px;border:1px solid #e0e3e7;border-radius:10px;padding:0 10px;background:#fff;color:#17233c;outline:none}
-.form-control:focus{border-color:#18a35c}
-.barcode-row,.sale-search{display:grid;grid-template-columns:1fr 45px;gap:7px}
-.scan-btn{height:44px;border-radius:10px;background:#17233c;color:#fff;font-size:20px}
-.primary-btn{height:45px;width:100%;border-radius:10px;background:#16a05a;color:#fff;font-weight:bold}
-.product-card{margin-top:11px;padding:13px;border-radius:13px;background:#f5faf7;border:1px solid #dceee3}
-.product-card.hidden{display:none}
-.product-name{font-size:17px;font-weight:bold;margin-bottom:7px}
-.product-meta{font-size:11px;color:#777;line-height:1.9}
-.product-price{font-size:19px;color:#15964b;font-weight:800;margin:6px 0}
-.sale-action{display:grid;grid-template-columns:80px 1fr;gap:7px;margin-top:8px}
-.qty-input{height:44px;width:100%;border:1px solid #ddd;border-radius:10px;text-align:center}
-.cart-list{display:flex;flex-direction:column;gap:8px}
-.cart-empty{text-align:center;color:#888;font-size:12px;padding:23px 5px}
-.cart-item{border:1px solid #e7e9eb;border-radius:11px;padding:10px}
-.cart-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
-.cart-name{font-size:14px;font-weight:bold}
-.remove-item{background:#ffe8e9;color:#d92f38;border-radius:7px;padding:5px 8px;font-size:11px}
-.cart-details{display:flex;justify-content:space-between;color:#777;font-size:11px;margin-top:6px}
-.cart-total{border-top:1px solid #eee;margin-top:12px;padding-top:12px;display:flex;justify-content:space-between;font-weight:bold;font-size:17px}
-.checkout-btn{margin-top:12px}
-.inventory-list{display:flex;flex-direction:column;gap:9px}
-.inventory-item{background:#fff;border-radius:14px;padding:13px;box-shadow:0 4px 15px rgba(23,35,60,.05)}
-.inventory-head{display:flex;justify-content:space-between;gap:10px}
-.inventory-name{font-size:14px;font-weight:bold}
-.inventory-barcode{font-size:11px;color:#888;margin-top:5px}
-.inventory-stock{font-size:19px;font-weight:bold}
-.inventory-actions{display:flex;gap:6px;margin-top:10px}
-.stock-btn{width:42px;height:39px;border-radius:9px;background:#eef1f3;font-size:20px}
-.delete-btn{height:39px;border-radius:9px;background:#ffe8e9;color:#d92f38;padding:0 11px;font-size:11px}
-.empty-state{text-align:center;color:#888;padding:30px 10px;font-size:13px}
-.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;height:70px;background:#fff;z-index:45;display:grid;grid-template-columns:1fr 1fr 1fr;border-top:1px solid #eee;box-shadow:0 -5px 20px rgba(0,0,0,.05);direction:rtl}
-.nav-btn{background:#fff;color:#888;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:11px}
-.nav-btn.active{color:#d92f38;font-weight:bold}
-.nav-icon{font-size:20px;line-height:20px}
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:80;display:none}
-.overlay.open{display:flex}
-.menu-overlay{align-items:flex-start;justify-content:center;padding-top:66px}
-.menu-panel{width:calc(100% - 28px);max-width:490px;background:#fff;border-radius:16px;padding:7px;box-shadow:0 15px 45px rgba(0,0,0,.18)}
-.menu-item{width:100%;height:47px;border-radius:10px;background:#fff;text-align:right;padding:0 14px;color:#17233c}
-.menu-item:active{background:#f2f4f5}
-.modal-overlay{align-items:flex-end;justify-content:center}
-.modal{width:100%;max-width:520px;max-height:92vh;overflow-y:auto;background:#fff;border-radius:21px 21px 0 0;padding:17px 15px 24px}
-.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
-.modal-title{font-size:17px;font-weight:800}
-.close-btn{width:37px;height:37px;border-radius:10px;background:#f0f2f3;color:#555;font-size:20px}
-.contact-text,.settings-text{font-size:13px;color:#555;line-height:2}
-.toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%) translateY(15px);opacity:0;pointer-events:none;z-index:120;background:#17233c;color:#fff;padding:10px 15px;border-radius:9px;font-size:12px;transition:.18s;max-width:90%;text-align:center}
+body{margin:0;background:#f4f6f8;color:#172033;font-family:Tahoma,Arial,sans-serif}
+button,input,select{font:inherit}
+button{border:0;cursor:pointer}
+.app{max-width:620px;margin:auto;min-height:100vh;padding-bottom:78px}
+header{height:62px;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 14px;border-bottom:1px solid #e7e9ed;position:sticky;top:0;z-index:20}
+.header-side{width:42px;display:flex;align-items:center;justify-content:center}
+.shop-name{font-size:16px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:230px}
+.connection{width:12px;height:12px;border-radius:50%;background:#ef4444;box-shadow:0 0 0 4px #fee2e2}
+.connection.ok{background:#22c55e;box-shadow:0 0 0 4px #dcfce7}
+.menu-btn{background:none;font-size:25px;color:#475569;width:40px;height:40px}
+main{padding:18px 14px}
+.page-title{font-size:22px;font-weight:800;margin:4px 0 18px}
+.card{background:#fff;border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:0 3px 15px rgba(15,23,42,.05)}
+.stat-title{font-size:13px;color:#64748b}
+.stat-value{font-size:27px;font-weight:800;margin-top:8px}
+.add-card{height:145px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:#fff}
+.add-plus{width:64px;height:64px;border-radius:20px;background:#22c55e;color:#fff;font-size:42px;line-height:1}
+.add-text{font-weight:700}
+.section-title{font-size:16px;font-weight:800;margin:20px 2px 10px}
+.low-title{color:#dc2626}
+.low-item,.inventory-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 0;border-bottom:1px solid #eef0f3}
+.low-item:last-child,.inventory-item:last-child{border-bottom:0}
+.item-name{font-weight:700;font-size:14px}
+.item-sub{font-size:11px;color:#64748b;margin-top:5px}
+.badge{padding:6px 9px;border-radius:10px;background:#fee2e2;color:#dc2626;font-size:12px;font-weight:700}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:12px;color:#64748b;margin:0 0 7px}
+.field input,.field select{width:100%;height:46px;border:1px solid #dfe4ea;border-radius:12px;padding:0 12px;background:#fff;outline:none}
+.field input:focus,.field select:focus{border-color:#22c55e}
+.row{display:flex;gap:8px}
+.row>*{flex:1}
+.scan-row{display:flex;gap:8px}
+.scan-row input{flex:1}
+.scan-btn{width:52px;border-radius:12px;background:#0f172a;color:#fff;font-size:20px}
+.primary{width:100%;height:47px;border-radius:13px;background:#16a34a;color:#fff;font-weight:700}
+.secondary{width:100%;height:45px;border-radius:12px;background:#e8edf2;color:#334155;font-weight:700}
+.danger{background:#fee2e2;color:#dc2626}
+.product-card{border:1px solid #e6e9ed;border-radius:15px;padding:14px;margin-top:12px}
+.product-head{display:flex;justify-content:space-between;gap:10px}
+.price{font-size:17px;font-weight:800}
+.stock{font-size:12px;color:#64748b;margin-top:7px}
+.qty-row{display:flex;align-items:center;gap:8px;margin-top:12px}
+.qty-row input{flex:1;height:43px;border:1px solid #dfe4ea;border-radius:11px;text-align:center}
+.qty-btn{width:43px;height:43px;border-radius:11px;background:#eef2f5;font-size:22px}
+.cart-row{padding:12px 0;border-bottom:1px solid #edf0f2}
+.cart-top{display:flex;justify-content:space-between;font-weight:700}
+.cart-bottom{display:flex;justify-content:space-between;color:#64748b;font-size:12px;margin-top:6px}
+.total{display:flex;justify-content:space-between;font-size:18px;font-weight:800;padding:15px 0}
+.inventory-actions{display:flex;align-items:center;gap:5px}
+.stock-num{min-width:35px;text-align:center;font-weight:800}
+.small-btn{width:35px;height:35px;border-radius:10px;background:#eef2f5;font-size:19px}
+.delete-btn{background:#fee2e2;color:#dc2626}
+.empty{text-align:center;color:#94a3b8;padding:28px 10px}
+.bottom{position:fixed;bottom:0;left:0;right:0;max-width:620px;margin:auto;height:68px;background:#fff;border-top:1px solid #e5e7eb;display:grid;grid-template-columns:1fr 1fr 1fr;z-index:30}
+.nav-btn{background:#fff;color:#64748b;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:11px}
+.nav-btn.active{color:#16a34a;font-weight:800}
+.nav-icon{font-size:21px}
+.menu{position:fixed;top:59px;right:max(10px,calc((100vw - 620px)/2 + 10px));width:190px;background:#fff;border-radius:15px;box-shadow:0 10px 35px rgba(0,0,0,.16);padding:7px;z-index:50;display:none}
+.menu.show{display:block}
+.menu button{display:block;width:100%;text-align:right;background:#fff;padding:12px;border-radius:10px;color:#334155}
+.menu button:hover{background:#f1f5f9}
+.overlay{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;align-items:flex-end;justify-content:center;z-index:60}
+.overlay.show{display:flex}
+.modal{width:min(620px,100%);background:#fff;border-radius:22px 22px 0 0;padding:18px;max-height:92vh;overflow:auto}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}
+.modal-title{font-size:18px;font-weight:800}
+.close{background:#eef2f5;width:38px;height:38px;border-radius:11px;font-size:20px}
+.connect-box{padding:14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:14px;color:#166534;font-size:13px;margin-bottom:14px}
+.login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.login-card{width:min(430px,100%);background:#fff;padding:22px;border-radius:22px;box-shadow:0 10px 35px rgba(0,0,0,.08)}
+.logo{text-align:center;font-size:28px;font-weight:900;margin-bottom:6px}
+.login-sub{text-align:center;color:#64748b;font-size:13px;margin-bottom:22px}
+.toast{position:fixed;bottom:82px;left:50%;transform:translateX(-50%) translateY(15px);background:#0f172a;color:#fff;padding:11px 17px;border-radius:12px;font-size:12px;opacity:0;pointer-events:none;transition:.2s;z-index:100}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.hidden{display:none!important}
 </style>
 </head>
 <body>
-<div class="app"><header class="header">
-<div class="header-top">
-<div class="connection"><span id="connectionLight" class="connection-dot"></span></div>
-<div id="shopName" class="shop-name">فروشگاه من</div>
-<button id="menuButton" class="menu-button" type="button">⋮</button>
+<div id="loginView" class="login">
+  <div class="login-card">
+    <div class="logo">BizadShop</div>
+    <div class="login-sub">مدیریت سریع فروشگاه</div>
+    <div class="field">
+      <label>نام کاربری</label>
+      <input id="loginUsername" autocomplete="username">
+    </div>
+    <div class="field">
+      <label>رمز عبور</label>
+      <input id="loginPassword" type="password" autocomplete="current-password">
+    </div>
+    <button class="primary" id="loginBtn">ورود</button>
+    <div style="height:12px"></div>
+    <button class="secondary" id="connectLoginBtn">اتصال به دیتابیس</button>
+  </div>
 </div>
-<button id="folderButton" class="connect-button" type="button">اتصال به دیتابیس</button>
-</header><div id="lockScreen" class="lock-screen">
-<div class="lock-box">
-<strong>لطفاً به دیتابیس متصل شوید</strong>
-<span>برای شروع کار، پوشه دیتابیس را انتخاب کنید.</span>
-</div>
-</div><main class="content"><section id="homePage" class="page active">
-<h1 class="page-title">مدیریت فروشگاه</h1>
-<div class="stats">
-<div class="stat-card">
-<div class="stat-title">فروش امروز</div>
-<div id="todaySales" class="stat-value">۰ تومان</div>
-<div id="todaySalesSub" class="stat-sub">بدون فروش</div>
-</div><div id="addProductCard" class="add-product-card">
-<div class="add-product-plus">+</div>
-<div class="add-product-text">ثبت کالا جدید</div>
-</div><div class="stat-card">
-<div class="stat-title">موجودی کالا</div>
-<div id="totalStock" class="stat-value">۰</div>
-<div class="stat-sub">تعداد موجودی</div>
-</div><div class="stat-card stat-danger">
-<div class="stat-title">کالاهای رو به اتمام</div>
-<div id="lowStock" class="stat-value">۰</div>
-<div class="stat-sub">نیاز به بررسی</div>
-</div>
-</div>
-</section><section id="salePage" class="page">
-<h1 class="page-title">فروش</h1><div class="section">
-<div class="section-title">جستجوی کالا</div>
-<div class="sale-search">
-<input id="barcodeInput" class="form-control" inputmode="numeric" placeholder="بارکد کالا">
-<button id="scanButton" class="scan-btn" type="button">⌁</button>
-</div><div id="saleProductCard" class="product-card hidden">
-<div id="saleProductName" class="product-name"></div>
-<div id="saleProductBarcode" class="product-meta"></div>
-<div id="saleProductStock" class="product-meta"></div>
-<div id="saleProductPrice" class="product-price"></div>
-<div class="sale-action">
-<input id="saleQuantity" class="qty-input" type="number" min="1" value="1">
-<button id="saleAddButton" class="primary-btn" type="button">افزودن به فاکتور</button>
-</div>
-</div>
-</div><div class="section">
-<div class="section-title">فاکتور</div>
-<div id="selectedList" class="cart-list">
-<div class="cart-empty">هنوز کالایی به فاکتور اضافه نشده است.</div>
-</div>
-<div class="cart-total">
-<span>مجموع</span>
-<span id="saleTotal">۰ تومان</span>
-</div>
-<button id="checkoutButton" class="primary-btn checkout-btn" type="button">ثبت نهایی فاکتور</button>
-</div>
-</section><section id="inventoryPage" class="page">
-<h1 class="page-title">انبار</h1>
-<div id="inventoryList" class="inventory-list">
-<div class="empty-state">کالایی ثبت نشده است.</div>
-</div>
-</section><section id="settingsPage" class="page">
-<h1 class="page-title">تنظیمات</h1>
-<div class="section">
-<div class="section-title">تنظیمات فروشگاه</div>
-<div class="form-group">
-<label>نام فروشگاه</label>
-<input id="settingsShopName" class="form-control">
-</div>
-<div class="form-group">
-<label>واحد پول</label>
-<select id="settingsCurrency" class="form-control">
-<option value="تومان">تومان</option>
-<option value="ریال">ریال</option>
-</select>
-</div>
-<button id="saveSettingsButton" class="primary-btn" type="button">ذخیره تنظیمات</button>
-</div>
-</section><section id="contactPage" class="page">
-<h1 class="page-title">تماس با ما</h1>
-<div class="section contact-text">
-<div class="section-title">BizadShop</div>
-<div>برای پشتیبانی و ارتباط با ما از راه‌های ارتباطی پشتیبانی استفاده کنید.</div>
-</div>
-</section></main><nav class="bottom-nav">
-<button class="nav-btn" data-page="salePage" type="button"><span class="nav-icon">🛒</span><span>فروش</span></button>
-<button class="nav-btn active" data-page="homePage" type="button"><span class="nav-icon">⌂</span><span>خانه</span></button>
-<button class="nav-btn" data-page="inventoryPage" type="button"><span class="nav-icon">▤</span><span>انبار</span></button>
-</nav>
-</div><div id="menuOverlay" class="overlay menu-overlay">
-<div class="menu-panel">
-<button class="menu-item" data-page="homePage" type="button">خانه</button>
-<button class="menu-item" data-page="salePage" type="button">فروش</button>
-<button class="menu-item" data-page="inventoryPage" type="button">انبار</button>
-<button class="menu-item" data-page="settingsPage" type="button">تنظیمات</button>
-<button class="menu-item" data-page="contactPage" type="button">تماس با ما</button>
-</div>
-</div><div id="productOverlay" class="overlay modal-overlay">
-<div class="modal">
-<div class="modal-head">
-<div class="modal-title">ثبت کالا جدید</div>
-<button id="productClose" class="close-btn" type="button">×</button>
-</div><div class="form-group">
-<label>بارکد</label>
-<div class="barcode-row">
-<input id="productBarcode" class="form-control" inputmode="numeric" placeholder="بارکد کالا">
-<button id="productScanButton" class="scan-btn" type="button">⌁</button>
-</div>
-</div><div class="form-group">
-<label>نام کالا</label>
-<input id="productName" class="form-control" placeholder="نام کالا">
-</div><div class="form-group">
-<label>دسته بندی</label>
-<select id="productCategory" class="form-control">
-<option value="نوشیدنی">نوشیدنی</option>
-<option value="خواربار">خواربار</option>
-<option value="یخچالی">یخچالی</option>
-<option value="تنقلات">تنقلات</option>
-<option value="شوینده">شوینده</option>
-<option value="بهداشتی">بهداشتی</option>
-<option value="لوازم مصرفی">لوازم مصرفی</option>
-<option value="سایر">سایر</option>
-</select>
-</div><div class="form-row">
-<div class="form-group">
-<label>قیمت خرید</label>
-<input id="productPurchasePrice" class="form-control" type="number" min="0" inputmode="decimal">
-</div>
-<div class="form-group">
-<label>قیمت فروش</label>
-<input id="productSalePrice" class="form-control" type="number" min="0" inputmode="decimal">
-</div>
-</div><div class="form-row">
-<div class="form-group">
-<label>واحد</label>
-<select id="productUnit" class="form-control">
-<option value="عدد">عدد</option>
-<option value="کیلو">کیلو</option>
-<option value="گرم">گرم</option>
-<option value="لیتر">لیتر</option>
-<option value="میلی‌لیتر">میلی‌لیتر</option>
-<option value="کارتن">کارتن</option>
-<option value="بسته">بسته</option>
-<option value="بطری">بطری</option>
-<option value="قوطی">قوطی</option>
-<option value="متر">متر</option>
-</select>
-</div>
-<div class="form-group">
-<label>تعداد</label>
-<input id="productQuantity" class="form-control" type="number" min="0" value="0">
-</div>
-</div><button id="productSubmit" class="primary-btn" type="button">ثبت</button>
 
+<div id="appView" class="app hidden">
+  <header>
+    <div class="header-side"><span id="connectionLight" class="connection"></span></div>
+    <div id="shopName" class="shop-name">BizadShop</div>
+    <div class="header-side"><button id="menuBtn" class="menu-btn">⋮</button></div>
+  </header>
+
+  <div id="menu" class="menu">
+    <button data-page="home">خانه</button>
+    <button data-page="sale">فروش</button>
+    <button data-page="inventory">انبار</button>
+    <button data-page="settings">تنظیمات</button>
+    <button data-page="contact">تماس با ما</button>
+  </div>
+
+  <main id="main"></main>
+
+  <nav class="bottom">
+    <button class="nav-btn" data-page="sale"><span class="nav-icon">🛒</span><span>فروش</span></button>
+    <button class="nav-btn active" data-page="home"><span class="nav-icon">⌂</span><span>خانه</span></button>
+    <button class="nav-btn" data-page="inventory"><span class="nav-icon">▤</span><span>انبار</span></button>
+  </nav>
 </div>
-</div><div id="toast" class="toast"></div><script src="main.js"></script></body>
+
+<div id="modalOverlay" class="overlay">
+  <div class="modal">
+    <div class="modal-head">
+      <div id="modalTitle" class="modal-title">ثبت کالا جدید</div>
+      <button id="modalClose" class="close">×</button>
+    </div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+<script src="main.js"></script>
+</body>
 </html>
