@@ -1,17 +1,23 @@
 
+
 const DB_NAME = "BizadShopLocal";
 const DB_VERSION = 1;
+
 const HANDLE_STORE = "handles";
 const HANDLE_KEY = "database-folder";
 
 let databaseDirectory = null;
 let connected = false;
 
+let currentSaleProduct = null;
+let selectedProducts = [];
+
 /* =========================================
 ELEMENTS
 ========================================= */
 
-const body = document.body;
+const body =
+document.body;
 
 const connectionLight =
 document.getElementById("connectionLight");
@@ -25,17 +31,68 @@ document.getElementById("connectButton");
 const folderButton =
 document.getElementById("folderButton");
 
+const menuButton =
+document.getElementById("menuButton");
+
+const mainMenu =
+document.getElementById("mainMenu");
+
 const scanButton =
 document.getElementById("scanButton");
 
 const barcodeInput =
 document.getElementById("barcodeInput");
 
+const addButton =
+document.getElementById("addButton");
+
+const saleProductCard =
+document.getElementById("saleProductCard");
+
+const saleProductName =
+document.getElementById("saleProductName");
+
+const saleProductBarcode =
+document.getElementById("saleProductBarcode");
+
+const saleProductPrice =
+document.getElementById("saleProductPrice");
+
+const saleProductStock =
+document.getElementById("saleProductStock");
+
+const saleQuantity =
+document.getElementById("saleQuantity");
+
+const selectedList =
+document.getElementById("selectedList");
+
+const inventoryList =
+document.getElementById("inventoryList");
+
+const newProductBarcode =
+document.getElementById("newProductBarcode");
+
+const newProductName =
+document.getElementById("newProductName");
+
+const newProductPrice =
+document.getElementById("newProductPrice");
+
+const newProductStock =
+document.getElementById("newProductStock");
+
+const saveProductButton =
+document.getElementById("saveProductButton");
+
 const toast =
 document.getElementById("toast");
 
 const navItems =
 document.querySelectorAll(".nav-item");
+
+const menuItems =
+document.querySelectorAll(".menu-item");
 
 const pages =
 document.querySelectorAll(".page");
@@ -98,7 +155,6 @@ if (status) {
 
 /* =========================================
 INDEXEDDB
-فقط برای نگهداری مجوز پوشه
 ========================================= */
 
 function openHandleDB() {
@@ -106,28 +162,43 @@ function openHandleDB() {
 return new Promise((resolve, reject) => {
 
     const request =
-        indexedDB.open(DB_NAME, DB_VERSION);
+        indexedDB.open(
+            DB_NAME,
+            DB_VERSION
+        );
 
     request.onupgradeneeded = () => {
 
-        const db = request.result;
+        const db =
+            request.result;
 
-        if (!db.objectStoreNames.contains(HANDLE_STORE)) {
+        if (
+            !db.objectStoreNames.contains(
+                HANDLE_STORE
+            )
+        ) {
 
-            db.createObjectStore(HANDLE_STORE);
+            db.createObjectStore(
+                HANDLE_STORE
+            );
 
         }
+
     };
 
     request.onsuccess = () => {
 
-        resolve(request.result);
+        resolve(
+            request.result
+        );
 
     };
 
     request.onerror = () => {
 
-        reject(request.error);
+        reject(
+            request.error
+        );
 
     };
 
@@ -137,76 +208,106 @@ return new Promise((resolve, reject) => {
 
 async function saveDirectoryHandle(handle) {
 
-const db = await openHandleDB();
+const db =
+    await openHandleDB();
 
-return new Promise((resolve, reject) => {
+return new Promise(
+    (resolve, reject) => {
 
-    const transaction =
-        db.transaction(HANDLE_STORE, "readwrite");
+        const transaction =
+            db.transaction(
+                HANDLE_STORE,
+                "readwrite"
+            );
 
-    transaction
-        .objectStore(HANDLE_STORE)
-        .put(handle, HANDLE_KEY);
+        transaction
+            .objectStore(
+                HANDLE_STORE
+            )
+            .put(
+                handle,
+                HANDLE_KEY
+            );
 
-    transaction.oncomplete = () => {
+        transaction.oncomplete = () => {
 
-        db.close();
+            db.close();
 
-        resolve();
+            resolve();
 
-    };
+        };
 
-    transaction.onerror = () => {
+        transaction.onerror = () => {
 
-        db.close();
+            db.close();
 
-        reject(transaction.error);
+            reject(
+                transaction.error
+            );
 
-    };
+        };
 
-});
+    }
+);
 
 }
 
 async function getSavedDirectoryHandle() {
 
-const db = await openHandleDB();
+const db =
+    await openHandleDB();
 
-return new Promise((resolve, reject) => {
+return new Promise(
+    (resolve, reject) => {
 
-    const transaction =
-        db.transaction(HANDLE_STORE, "readonly");
+        const transaction =
+            db.transaction(
+                HANDLE_STORE,
+                "readonly"
+            );
 
-    const request =
-        transaction
-            .objectStore(HANDLE_STORE)
-            .get(HANDLE_KEY);
+        const request =
+            transaction
+                .objectStore(
+                    HANDLE_STORE
+                )
+                .get(
+                    HANDLE_KEY
+                );
 
-    request.onsuccess = () => {
+        request.onsuccess = () => {
 
-        db.close();
+            db.close();
 
-        resolve(request.result || null);
+            resolve(
+                request.result || null
+            );
 
-    };
+        };
 
-    request.onerror = () => {
+        request.onerror = () => {
 
-        db.close();
+            db.close();
 
-        reject(request.error);
+            reject(
+                request.error
+            );
 
-    };
+        };
 
-});
+    }
+);
 
 }
 
 /* =========================================
-DIRECTORY PERMISSION
+PERMISSION
+مهم:
+در Startup فقط queryPermission می‌کنیم.
+requestPermission فقط بعد از کلیک کاربر.
 ========================================= */
 
-async function verifyDirectoryPermission(handle) {
+async function hasDirectoryPermission(handle) {
 
 if (!handle) {
     return false;
@@ -214,16 +315,32 @@ if (!handle) {
 
 try {
 
-    let permission =
+    const permission =
         await handle.queryPermission({
             mode: "readwrite"
         });
 
-    if (permission === "granted") {
-        return true;
-    }
+    return permission === "granted";
 
-    permission =
+} catch (error) {
+
+    console.error(error);
+
+    return false;
+
+}
+
+}
+
+async function requestDirectoryPermission(handle) {
+
+if (!handle) {
+    return false;
+}
+
+try {
+
+    const permission =
         await handle.requestPermission({
             mode: "readwrite"
         });
@@ -235,12 +352,13 @@ try {
     console.error(error);
 
     return false;
+
 }
 
 }
 
 /* =========================================
-CREATE FILE
+FILE HELPERS
 ========================================= */
 
 async function writeJSONFile(
@@ -272,8 +390,114 @@ await writable.close();
 
 }
 
+/*
+
+* این تابع فقط در صورتی فایل را می‌سازد
+* که قبلاً وجود نداشته باشد.
+* 
+* فایل موجود هرگز overwrite نمی‌شود.
+  */
+
+async function ensureJSONFile(
+directory,
+fileName,
+initialData
+) {
+
+try {
+
+    await directory.getFileHandle(
+        fileName,
+        {
+            create: false
+        }
+    );
+
+    return false;
+
+} catch (error) {
+
+    if (
+        error.name !==
+        "NotFoundError"
+    ) {
+
+        throw error;
+
+    }
+
+    await writeJSONFile(
+        directory,
+        fileName,
+        initialData
+    );
+
+    return true;
+
+}
+
+}
+
+async function readJSONFile(
+directory,
+fileName,
+fallback = []
+) {
+
+try {
+
+    const fileHandle =
+        await directory.getFileHandle(
+            fileName
+        );
+
+    const file =
+        await fileHandle.getFile();
+
+    const text =
+        await file.text();
+
+    if (!text.trim()) {
+        return fallback;
+    }
+
+    return JSON.parse(text);
+
+} catch (error) {
+
+    if (
+        error.name ===
+        "NotFoundError"
+    ) {
+
+        return fallback;
+
+    }
+
+    console.error(error);
+
+    return fallback;
+
+}
+
+}
+
+async function updateJSONFile(
+directory,
+fileName,
+data
+) {
+
+await writeJSONFile(
+    directory,
+    fileName,
+    data
+);
+
+}
+
 /* =========================================
-CREATE FOLDER
+FOLDER
 ========================================= */
 
 async function getFolder(
@@ -291,48 +515,72 @@ return await directory.getDirectoryHandle(
 }
 
 /* =========================================
-CREATE DATABASE STRUCTURE
+DATABASE STRUCTURE
 ========================================= */
 
-async function createDatabaseStructure(directory) {
+async function createDatabaseStructure(
+directory
+) {
 
 const system =
-    await getFolder(directory, "system");
+    await getFolder(
+        directory,
+        "system"
+    );
 
 const shop =
-    await getFolder(directory, "shop");
+    await getFolder(
+        directory,
+        "shop"
+    );
 
 const users =
-    await getFolder(directory, "users");
+    await getFolder(
+        directory,
+        "users"
+    );
 
 const products =
-    await getFolder(directory, "products");
+    await getFolder(
+        directory,
+        "products"
+    );
 
 const inventory =
-    await getFolder(directory, "inventory");
+    await getFolder(
+        directory,
+        "inventory"
+    );
 
 const sales =
-    await getFolder(directory, "sales");
+    await getFolder(
+        directory,
+        "sales"
+    );
 
-const backups =
-    await getFolder(directory, "backups");
+await getFolder(
+    directory,
+    "backups"
+);
 
 
 /* SYSTEM */
 
-await writeJSONFile(
+await ensureJSONFile(
     system,
     "database.json",
     {
         database_name: "BizadShop",
         database_id: crypto.randomUUID(),
-        created_at: new Date().toISOString(),
-        last_update: new Date().toISOString()
+        created_at:
+            new Date().toISOString(),
+        last_update:
+            new Date().toISOString()
     }
 );
 
 
-await writeJSONFile(
+await ensureJSONFile(
     system,
     "version.json",
     {
@@ -343,19 +591,20 @@ await writeJSONFile(
 
 /* SHOP */
 
-await writeJSONFile(
+await ensureJSONFile(
     shop,
     "info.json",
     {
         name: "فروشگاه من",
         phone: "",
         address: "",
-        created_at: new Date().toISOString()
+        created_at:
+            new Date().toISOString()
     }
 );
 
 
-await writeJSONFile(
+await ensureJSONFile(
     shop,
     "settings.json",
     {
@@ -368,7 +617,7 @@ await writeJSONFile(
 
 /* USERS */
 
-await writeJSONFile(
+await ensureJSONFile(
     users,
     "users.json",
     []
@@ -377,7 +626,7 @@ await writeJSONFile(
 
 /* PRODUCTS */
 
-await writeJSONFile(
+await ensureJSONFile(
     products,
     "products.json",
     []
@@ -386,7 +635,7 @@ await writeJSONFile(
 
 /* INVENTORY */
 
-await writeJSONFile(
+await ensureJSONFile(
     inventory,
     "inventory.json",
     []
@@ -395,26 +644,16 @@ await writeJSONFile(
 
 /* SALES */
 
-await writeJSONFile(
+await ensureJSONFile(
     sales,
     "invoices.json",
     []
 );
 
-
-await writeJSONFile(
+await ensureJSONFile(
     sales,
     "items.json",
     []
-);
-
-
-/*
- * پوشه backups عمداً خالی می‌ماند.
- */
-
-console.log(
-    "BizadShop database structure created."
 );
 
 }
@@ -426,7 +665,10 @@ CONNECT DATABASE
 async function connectDatabase() {
 
 if (
-    !("showDirectoryPicker" in window)
+    !(
+        "showDirectoryPicker"
+        in window
+    )
 ) {
 
     showToast(
@@ -435,6 +677,7 @@ if (
     );
 
     return;
+
 }
 
 
@@ -447,7 +690,7 @@ try {
 
 
     const permission =
-        await verifyDirectoryPermission(
+        await requestDirectoryPermission(
             directory
         );
 
@@ -455,16 +698,23 @@ try {
     if (!permission) {
 
         showToast(
-            "اجازه دسترسی به پوشه داده نشد.",
+            "اجازه دسترسی به دیتابیس داده نشد.",
             "error"
         );
 
         return;
+
     }
 
 
-    databaseDirectory = directory;
+    databaseDirectory =
+        directory;
 
+
+    /*
+     * ساختار فقط تکمیل می‌شود.
+     * فایل‌های موجود دست‌نخورده می‌مانند.
+     */
 
     await createDatabaseStructure(
         databaseDirectory
@@ -483,6 +733,12 @@ try {
         "دیتابیس متصل است";
 
 
+    closeMainMenu();
+
+
+    await refreshAllData();
+
+
     showToast(
         "دیتابیس با موفقیت متصل شد.",
         "success"
@@ -499,19 +755,20 @@ try {
     ) {
 
         return;
-    }
 
+    }
 
     showToast(
         "اتصال به دیتابیس انجام نشد.",
         "error"
     );
+
 }
 
 }
 
 /* =========================================
-RESTORE PREVIOUS CONNECTION
+RESTORE CONNECTION
 ========================================= */
 
 async function restoreDatabaseConnection() {
@@ -527,11 +784,22 @@ try {
         setConnectionStatus(false);
 
         return;
+
     }
 
 
+    /*
+     * اینجا فقط queryPermission اجرا می‌شود.
+     *
+     * اگر مرورگر قبلاً مجوز را حفظ کرده باشد:
+     * اتصال خودکار انجام می‌شود.
+     *
+     * اگر مجوز prompt باشد:
+     * سایت قفل می‌ماند تا کاربر خودش کلیک کند.
+     */
+
     const permission =
-        await verifyDirectoryPermission(
+        await hasDirectoryPermission(
             savedHandle
         );
 
@@ -540,7 +808,11 @@ try {
 
         setConnectionStatus(false);
 
+        folderButton.textContent =
+            "اتصال به دیتابیس";
+
         return;
+
     }
 
 
@@ -555,11 +827,15 @@ try {
         "دیتابیس متصل است";
 
 
+    await refreshAllData();
+
+
 } catch (error) {
 
     console.error(error);
 
     setConnectionStatus(false);
+
 }
 
 }
@@ -571,44 +847,175 @@ NAVIGATION
 function showPage(pageId) {
 
 if (!connected) {
+
+    showToast(
+        "ابتدا به دیتابیس متصل شوید.",
+        "error"
+    );
+
     return;
+
 }
 
 
 pages.forEach(page => {
 
-    page.classList.remove("active");
+    page.classList.remove(
+        "active"
+    );
 
 });
 
 
 navItems.forEach(item => {
 
-    item.classList.remove("active");
+    item.classList.remove(
+        "active"
+    );
+
+});
+
+
+menuItems.forEach(item => {
+
+    item.classList.remove(
+        "active"
+    );
 
 });
 
 
 const page =
-    document.getElementById(pageId);
+    document.getElementById(
+        pageId
+    );
 
 
-const button =
+const bottomButton =
     document.querySelector(
         `.nav-item[data-page="${pageId}"]`
     );
 
 
+const menuButtonItem =
+    document.querySelector(
+        `.menu-item[data-page="${pageId}"]`
+    );
+
+
 if (page) {
-    page.classList.add("active");
+
+    page.classList.add(
+        "active"
+    );
+
 }
 
 
-if (button) {
-    button.classList.add("active");
+if (bottomButton) {
+
+    bottomButton.classList.add(
+        "active"
+    );
+
+}
+
+
+if (menuButtonItem) {
+
+    menuButtonItem.classList.add(
+        "active"
+    );
+
+}
+
+
+closeMainMenu();
+
+
+if (pageId === "inventoryPage") {
+
+    loadInventory();
+
 }
 
 }
+
+/* =========================================
+MAIN MENU
+========================================= */
+
+function openMainMenu() {
+
+mainMenu.classList.add(
+    "open"
+);
+
+}
+
+function closeMainMenu() {
+
+mainMenu.classList.remove(
+    "open"
+);
+
+}
+
+menuButton.addEventListener(
+"click",
+event => {
+
+    event.stopPropagation();
+
+    if (
+        mainMenu.classList.contains(
+            "open"
+        )
+    ) {
+
+        closeMainMenu();
+
+    } else {
+
+        openMainMenu();
+
+    }
+
+}
+
+);
+
+document.addEventListener(
+"click",
+event => {
+
+    if (
+        !mainMenu.contains(event.target) &&
+        !menuButton.contains(event.target)
+    ) {
+
+        closeMainMenu();
+
+    }
+
+}
+
+);
+
+menuItems.forEach(item => {
+
+item.addEventListener(
+    "click",
+    () => {
+
+        showPage(
+            item.dataset.page
+        );
+
+    }
+);
+
+});
 
 /* =========================================
 BINARY EYE
@@ -617,17 +1024,16 @@ BINARY EYE
 function openBinaryEye() {
 
 if (!connected) {
+
+    showToast(
+        "ابتدا به دیتابیس متصل شوید.",
+        "error"
+    );
+
     return;
+
 }
 
-
-/*
- * نتیجه Binary Eye به این آدرس برمی‌گردد.
- *
- * {RESULT}
- * توسط Binary Eye با مقدار بارکد
- * جایگزین می‌شود.
- */
 
 const returnURL =
     new URL(
@@ -683,17 +1089,13 @@ if (
 ) {
 
     return;
+
 }
 
 
 barcodeInput.value =
     barcode;
 
-
-/*
- * URL تمیز می‌شود تا اسکن قبلی
- * دوباره پردازش نشود.
- */
 
 url.searchParams.delete(
     "barcode"
@@ -714,10 +1116,22 @@ showToast(
     "success"
 );
 
+
+setTimeout(
+    () => {
+
+        searchProductForSale(
+            barcode
+        );
+
+    },
+    100
+);
+
 }
 
 /* =========================================
-BARCODE VALIDATION
+BARCODE
 ========================================= */
 
 function normalizeBarcode(value) {
@@ -728,60 +1142,401 @@ return String(value || "")
 
 }
 
-async function barcodeExists(barcode) {
+async function getProducts() {
 
 if (!databaseDirectory) {
-    return false;
+    return [];
 }
 
 
-try {
-
-    const productsDirectory =
-        await databaseDirectory.getDirectoryHandle(
+const productsDirectory =
+    await databaseDirectory
+        .getDirectoryHandle(
             "products"
         );
 
 
-    const fileHandle =
-        await productsDirectory.getFileHandle(
-            "products.json"
+return await readJSONFile(
+    productsDirectory,
+    "products.json",
+    []
+);
+
+}
+
+async function getInventory() {
+
+if (!databaseDirectory) {
+    return [];
+}
+
+
+const inventoryDirectory =
+    await databaseDirectory
+        .getDirectoryHandle(
+            "inventory"
         );
 
 
-    const file =
-        await fileHandle.getFile();
+return await readJSONFile(
+    inventoryDirectory,
+    "inventory.json",
+    []
+);
+
+}
+
+async function saveProducts(products) {
+
+const productsDirectory =
+    await databaseDirectory
+        .getDirectoryHandle(
+            "products"
+        );
 
 
-    const text =
-        await file.text();
+await updateJSONFile(
+    productsDirectory,
+    "products.json",
+    products
+);
+
+}
+
+async function saveInventory(inventory) {
+
+const inventoryDirectory =
+    await databaseDirectory
+        .getDirectoryHandle(
+            "inventory"
+        );
 
 
-    const products =
-        JSON.parse(text || "[]");
+await updateJSONFile(
+    inventoryDirectory,
+    "inventory.json",
+    inventory
+);
 
+}
 
-    return products.some(
-        product =>
-            String(product.barcode) ===
-            String(barcode)
+async function barcodeExists(barcode) {
+
+const normalized =
+    normalizeBarcode(
+        barcode
     );
 
 
-} catch (error) {
+const products =
+    await getProducts();
 
-    console.error(error);
 
-    return false;
-}
+return products.some(
+    product =>
+        normalizeBarcode(
+            product.barcode
+        ) === normalized
+);
 
 }
 
 /* =========================================
-ADD PRODUCT - فعلاً نمونه
+SEARCH PRODUCT
 ========================================= */
 
-async function addSampleProduct() {
+async function searchProductForSale(
+barcode
+) {
+
+if (!connected) {
+    return;
+}
+
+
+const normalized =
+    normalizeBarcode(
+        barcode
+    );
+
+
+if (!normalized) {
+
+    saleProductCard.classList.add(
+        "empty"
+    );
+
+    currentSaleProduct = null;
+
+    return;
+
+}
+
+
+const products =
+    await getProducts();
+
+
+const product =
+    products.find(
+        item =>
+            normalizeBarcode(
+                item.barcode
+            ) === normalized
+    );
+
+
+if (!product) {
+
+    saleProductCard.classList.add(
+        "empty"
+    );
+
+    currentSaleProduct = null;
+
+
+    showToast(
+        "این بارکد در کالاها ثبت نشده است.",
+        "error"
+    );
+
+
+    return;
+
+}
+
+
+const inventory =
+    await getInventory();
+
+
+const stockItem =
+    inventory.find(
+        item =>
+            String(item.product_id) ===
+            String(product.id)
+    );
+
+
+const stock =
+    stockItem
+        ? Number(stockItem.stock || 0)
+        : 0;
+
+
+currentSaleProduct = {
+    ...product,
+    stock
+};
+
+
+saleProductName.textContent =
+    product.name;
+
+
+saleProductBarcode.textContent =
+    product.barcode;
+
+
+saleProductPrice.textContent =
+    formatMoney(
+        product.price1
+    );
+
+
+saleProductStock.textContent =
+    `${toPersianNumber(stock)} عدد`;
+
+
+saleQuantity.value = 1;
+
+
+saleProductCard.classList.remove(
+    "empty"
+);
+
+}
+
+/* =========================================
+SALE ADD
+========================================= */
+
+async function addProductToSale() {
+
+if (!connected) {
+    return;
+}
+
+
+if (!currentSaleProduct) {
+
+    showToast(
+        "ابتدا یک کالا را با بارکد پیدا کنید.",
+        "error"
+    );
+
+    return;
+
+}
+
+
+const quantity =
+    Number(
+        saleQuantity.value
+    );
+
+
+if (
+    !Number.isInteger(quantity) ||
+    quantity <= 0
+) {
+
+    showToast(
+        "تعداد واردشده صحیح نیست.",
+        "error"
+    );
+
+    return;
+
+}
+
+
+if (
+    quantity >
+    currentSaleProduct.stock
+) {
+
+    showToast(
+        "موجودی این کالا کافی نیست.",
+        "error"
+    );
+
+    return;
+
+}
+
+
+const existing =
+    selectedProducts.find(
+        item =>
+            String(item.product_id) ===
+            String(
+                currentSaleProduct.id
+            )
+    );
+
+
+if (existing) {
+
+    const newQuantity =
+        existing.quantity +
+        quantity;
+
+
+    if (
+        newQuantity >
+        currentSaleProduct.stock
+    ) {
+
+        showToast(
+            "تعداد انتخاب‌شده بیشتر از موجودی است.",
+            "error"
+        );
+
+        return;
+
+    }
+
+
+    existing.quantity =
+        newQuantity;
+
+} else {
+
+    selectedProducts.push({
+
+        product_id:
+            currentSaleProduct.id,
+
+        barcode:
+            currentSaleProduct.barcode,
+
+        name:
+            currentSaleProduct.name,
+
+        unit_price:
+            Number(
+                currentSaleProduct.price1
+            ),
+
+        quantity:
+            quantity
+
+    });
+
+}
+
+
+renderSelectedProducts();
+
+showToast(
+    "کالا به فروش اضافه شد.",
+    "success"
+);
+
+}
+
+/* =========================================
+SELECTED PRODUCTS
+========================================= */
+
+function renderSelectedProducts() {
+
+if (
+    !selectedProducts.length
+) {
+
+    selectedList.innerHTML = `
+        <div class="empty-message">
+            هنوز کالایی برای فروش انتخاب نشده است.
+        </div>
+    `;
+
+    return;
+
+}
+
+
+selectedList.innerHTML =
+    selectedProducts.map(
+        item => `
+
+            <div class="selected-item">
+
+                <div class="selected-name">
+                    ${escapeHTML(item.name)}
+                </div>
+
+                <div class="selected-price">
+                    ${formatMoney(item.unit_price)}
+                </div>
+
+                <div class="selected-quantity">
+                    × ${toPersianNumber(item.quantity)}
+                </div>
+
+            </div>
+
+        `
+    ).join("");
+
+}
+
+/* =========================================
+ADD NEW PRODUCT
+========================================= */
+
+async function addNewProduct() {
 
 if (!connected) {
     return;
@@ -790,44 +1545,733 @@ if (!connected) {
 
 const barcode =
     normalizeBarcode(
-        barcodeInput.value
+        newProductBarcode.value
+    );
+
+
+const name =
+    String(
+        newProductName.value || ""
+    ).trim();
+
+
+const price =
+    Number(
+        newProductPrice.value
+    );
+
+
+const stock =
+    Number(
+        newProductStock.value
     );
 
 
 if (!barcode) {
 
     showToast(
-        "ابتدا بارکد کالا را وارد کنید.",
+        "بارکد کالا را وارد کنید.",
         "error"
     );
 
-    barcodeInput.focus();
+    newProductBarcode.focus();
 
     return;
+
 }
 
 
-const exists =
-    await barcodeExists(
-        barcode
-    );
-
-
-if (exists) {
+if (!name) {
 
     showToast(
-        "این بارکد قبلاً برای یک کالا ثبت شده است.",
+        "نام کالا را وارد کنید.",
+        "error"
+    );
+
+    newProductName.focus();
+
+    return;
+
+}
+
+
+if (
+    !Number.isFinite(price) ||
+    price < 0
+) {
+
+    showToast(
+        "قیمت کالا صحیح نیست.",
         "error"
     );
 
     return;
+
 }
+
+
+if (
+    !Number.isInteger(stock) ||
+    stock < 0
+) {
+
+    showToast(
+        "موجودی کالا صحیح نیست.",
+        "error"
+    );
+
+    return;
+
+}
+
+
+if (
+    await barcodeExists(
+        barcode
+    )
+) {
+
+    showToast(
+        "این بارکد قبلاً ثبت شده است.",
+        "error"
+    );
+
+    return;
+
+}
+
+
+const products =
+    await getProducts();
+
+
+const inventory =
+    await getInventory();
+
+
+const productId =
+    crypto.randomUUID();
+
+
+const now =
+    new Date().toISOString();
+
+
+products.push({
+
+    id:
+        productId,
+
+    barcode:
+        barcode,
+
+    name:
+        name,
+
+    price1:
+        price,
+
+    price2:
+        null,
+
+    created_at:
+        now,
+
+    updated_at:
+        now
+
+});
+
+
+inventory.push({
+
+    product_id:
+        productId,
+
+    stock:
+        stock,
+
+    updated_at:
+        now
+
+});
+
+
+await saveProducts(
+    products
+);
+
+
+await saveInventory(
+    inventory
+);
+
+
+newProductBarcode.value = "";
+newProductName.value = "";
+newProductPrice.value = "";
+newProductStock.value = "0";
+
+
+await loadInventory();
+
+await updateDashboard();
 
 
 showToast(
-    "بارکد آزاد است؛ ثبت کامل کالا در مرحله بعد اضافه می‌شود.",
+    "کالا با موفقیت ثبت شد.",
     "success"
 );
+
+}
+
+/* =========================================
+INVENTORY
+========================================= */
+
+async function loadInventory() {
+
+if (!connected) {
+    return;
+}
+
+
+const products =
+    await getProducts();
+
+
+const inventory =
+    await getInventory();
+
+
+if (!products.length) {
+
+    inventoryList.innerHTML = `
+        <div class="empty-message">
+            هنوز کالایی در انبار ثبت نشده است.
+        </div>
+    `;
+
+    return;
+
+}
+
+
+inventoryList.innerHTML =
+    products.map(
+        product => {
+
+            const stockItem =
+                inventory.find(
+                    item =>
+                        String(
+                            item.product_id
+                        ) ===
+                        String(
+                            product.id
+                        )
+                );
+
+
+            const stock =
+                stockItem
+                    ? Number(
+                        stockItem.stock || 0
+                    )
+                    : 0;
+
+
+            let stockClass =
+                "stock-good";
+
+            let progressClass =
+                "";
+
+            if (stock === 0) {
+
+                stockClass =
+                    "stock-empty";
+
+                progressClass =
+                    "empty";
+
+            } else if (stock <= 5) {
+
+                stockClass =
+                    "stock-low";
+
+                progressClass =
+                    "low";
+
+            }
+
+
+            const progress =
+                Math.min(
+                    100,
+                    Math.max(
+                        3,
+                        stock * 5
+                    )
+                );
+
+
+            return `
+
+                <div
+                    class="inventory-card"
+                    data-product-id="${product.id}"
+                >
+
+                    <div class="inventory-top">
+
+                        <div class="inventory-name">
+                            ${escapeHTML(product.name)}
+                        </div>
+
+                        <div
+                            class="inventory-stock ${stockClass}"
+                        >
+                            ${toPersianNumber(stock)}
+                            عدد
+                        </div>
+
+                    </div>
+
+
+                    <div class="inventory-bar">
+
+                        <div
+                            class="inventory-progress ${progressClass}"
+                            style="width:${progress}%"
+                        ></div>
+
+                    </div>
+
+
+                    <div class="inventory-actions">
+
+                        <button
+                            class="inventory-action plus"
+                            type="button"
+                            data-action="plus"
+                            data-id="${product.id}"
+                        >
+                            + افزایش
+                        </button>
+
+                        <button
+                            class="inventory-action minus"
+                            type="button"
+                            data-action="minus"
+                            data-id="${product.id}"
+                        >
+                            − کاهش
+                        </button>
+
+                        <button
+                            class="inventory-action delete"
+                            type="button"
+                            data-action="delete"
+                            data-id="${product.id}"
+                        >
+                            حذف
+                        </button>
+
+                    </div>
+
+                </div>
+
+            `;
+
+        }
+    ).join("");
+
+}
+
+/* =========================================
+INVENTORY CHANGE
+========================================= */
+
+async function changeInventory(
+productId,
+amount
+) {
+
+const inventory =
+    await getInventory();
+
+
+const item =
+    inventory.find(
+        row =>
+            String(row.product_id) ===
+            String(productId)
+    );
+
+
+if (!item) {
+
+    showToast(
+        "رکورد موجودی کالا پیدا نشد.",
+        "error"
+    );
+
+    return;
+
+}
+
+
+const currentStock =
+    Number(
+        item.stock || 0
+    );
+
+
+const newStock =
+    currentStock +
+    amount;
+
+
+if (newStock < 0) {
+
+    showToast(
+        "موجودی نمی‌تواند کمتر از صفر باشد.",
+        "error"
+    );
+
+    return;
+
+}
+
+
+item.stock =
+    newStock;
+
+
+item.updated_at =
+    new Date().toISOString();
+
+
+await saveInventory(
+    inventory
+);
+
+
+await loadInventory();
+
+await updateDashboard();
+
+
+showToast(
+    amount > 0
+        ? "موجودی افزایش یافت."
+        : "موجودی کاهش یافت.",
+    "success"
+);
+
+}
+
+/* =========================================
+DELETE PRODUCT
+========================================= */
+
+async function deleteProduct(
+productId
+) {
+
+const products =
+    await getProducts();
+
+
+const product =
+    products.find(
+        item =>
+            String(item.id) ===
+            String(productId)
+    );
+
+
+if (!product) {
+
+    showToast(
+        "کالا پیدا نشد.",
+        "error"
+    );
+
+    return;
+
+}
+
+
+const confirmed =
+    window.confirm(
+        `کالای «${product.name}» حذف شود؟`
+    );
+
+
+if (!confirmed) {
+    return;
+}
+
+
+const newProducts =
+    products.filter(
+        item =>
+            String(item.id) !==
+            String(productId)
+    );
+
+
+const inventory =
+    await getInventory();
+
+
+const newInventory =
+    inventory.filter(
+        item =>
+            String(item.product_id) !==
+            String(productId)
+    );
+
+
+await saveProducts(
+    newProducts
+);
+
+
+await saveInventory(
+    newInventory
+);
+
+
+selectedProducts =
+    selectedProducts.filter(
+        item =>
+            String(item.product_id) !==
+            String(productId)
+    );
+
+
+renderSelectedProducts();
+
+await loadInventory();
+
+await updateDashboard();
+
+
+showToast(
+    "کالا حذف شد.",
+    "success"
+);
+
+}
+
+/* =========================================
+INVENTORY EVENTS
+========================================= */
+
+inventoryList.addEventListener(
+"click",
+async event => {
+
+    const button =
+        event.target.closest(
+            ".inventory-action"
+        );
+
+
+    if (!button) {
+        return;
+    }
+
+
+    const productId =
+        button.dataset.id;
+
+
+    const action =
+        button.dataset.action;
+
+
+    if (action === "plus") {
+
+        await changeInventory(
+            productId,
+            1
+        );
+
+    }
+
+
+    if (action === "minus") {
+
+        await changeInventory(
+            productId,
+            -1
+        );
+
+    }
+
+
+    if (action === "delete") {
+
+        await deleteProduct(
+            productId
+        );
+
+    }
+
+}
+
+);
+
+/* =========================================
+DASHBOARD
+========================================= */
+
+async function updateDashboard() {
+
+if (!connected) {
+    return;
+}
+
+
+const inventory =
+    await getInventory();
+
+
+const totalStock =
+    inventory.reduce(
+        (
+            total,
+            item
+        ) =>
+            total +
+            Number(
+                item.stock || 0
+            ),
+        0
+    );
+
+
+const lowStock =
+    inventory.filter(
+        item =>
+            Number(
+                item.stock || 0
+            ) <= 5
+    ).length;
+
+
+const totalStockElement =
+    document.getElementById(
+        "totalStock"
+    );
+
+
+const lowStockElement =
+    document.getElementById(
+        "lowStockCount"
+    );
+
+
+if (totalStockElement) {
+
+    totalStockElement.textContent =
+        toPersianNumber(
+            totalStock
+        );
+
+}
+
+
+if (lowStockElement) {
+
+    lowStockElement.textContent =
+        toPersianNumber(
+            lowStock
+        );
+
+}
+
+}
+
+/* =========================================
+REFRESH DATA
+========================================= */
+
+async function refreshAllData() {
+
+if (!connected) {
+    return;
+}
+
+
+await loadInventory();
+
+await updateDashboard();
+
+renderSelectedProducts();
+
+}
+
+/* =========================================
+UTILITIES
+========================================= */
+
+function formatMoney(value) {
+
+const number =
+    Number(value || 0);
+
+
+return (
+    new Intl.NumberFormat(
+        "fa-IR"
+    ).format(number) +
+    " تومان"
+);
+
+}
+
+function toPersianNumber(value) {
+
+return String(
+    value
+).replace(
+    /\d/g,
+    digit =>
+        "۰۱۲۳۴۵۶۷۸۹"[digit]
+);
+
+}
+
+function escapeHTML(value) {
+
+return String(
+    value ?? ""
+)
+    .replace(
+        /&/g,
+        "&amp;"
+    )
+    .replace(
+        /</g,
+        "&lt;"
+    )
+    .replace(
+        />/g,
+        "&gt;"
+    )
+    .replace(
+        /"/g,
+        "&quot;"
+    )
+    .replace(
+        /'/g,
+        "&#039;"
+    );
 
 }
 
@@ -850,11 +2294,47 @@ scanButton.addEventListener(
 openBinaryEye
 );
 
-document
-.getElementById("addButton")
-.addEventListener(
+addButton.addEventListener(
 "click",
-addSampleProduct
+addProductToSale
+);
+
+saveProductButton.addEventListener(
+"click",
+addNewProduct
+);
+
+barcodeInput.addEventListener(
+"change",
+() => {
+
+    searchProductForSale(
+        barcodeInput.value
+    );
+
+}
+
+);
+
+barcodeInput.addEventListener(
+"keydown",
+event => {
+
+    if (
+        event.key ===
+        "Enter"
+    ) {
+
+        event.preventDefault();
+
+        searchProductForSale(
+            barcodeInput.value
+        );
+
+    }
+
+}
+
 );
 
 navItems.forEach(item => {
@@ -863,10 +2343,10 @@ item.addEventListener(
     "click",
     () => {
 
-        const pageId =
-            item.dataset.page;
+        showPage(
+            item.dataset.page
+        );
 
-        showPage(pageId);
     }
 );
 
