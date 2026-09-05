@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BizadShop</title>
+
+<style>
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+:root {
+    --red: #ef4444;
+    --green: #19c37d;
+    --dark: #172033;
+    --bg: #f5f7fa;
+    --border: #e8ebf0;
+}
+
+html,
+body {
+    width: 100%;
+    height: 100%;
+}
+
+body {
+    font-family: Tahoma, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--dark);
+}
+
+.app {
+    width: 100%;
+    max-width: 520px;
+    height: 100vh;
+    margin: auto;
+    position: relative;
+    overflow: hidden;
+    background: var(--bg);
+}
+
+
+/* =================================
+   کادر قرمز بالایی
+================================= */
+
+.top-header {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    height: 190px;
+
+    background:
+        linear-gradient(
+            to bottom,
+            #ef4444 0,
+            #ef4444 125px,
+            rgba(239, 68, 68, 0.95) 140px,
+            rgba(239, 68, 68, 0.65) 155px,
+            rgba(255,255,255,0) 190px
+        );
+
+    z-index: 20;
+}
+
+
+/* محتوای داخل قسمت قرمز */
+
+.header-content {
+    padding: 18px 18px 0;
+}
+
+
+/* =================================
+   ردیف بالا
+================================= */
+
+.header-row {
+    height: 46px;
+
+    display: grid;
+    grid-template-columns: 45px 1fr 45px;
+
+    align-items: center;
+}
+
+
+/* سه خط */
+
+.menu-button {
+    width: 42px;
+    height: 42px;
+
+    border: none;
+    background: transparent;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+    gap: 5px;
+
+    cursor: pointer;
+}
+
+.menu-button span {
+    width: 23px;
+    height: 2px;
+
+    border-radius: 10px;
+
+    background: white;
+}
+
+
+/* نام فروشگاه */
+
+.shop-name {
+    text-align: center;
+
+    color: white;
+
+    font-size: 19px;
+    font-weight: bold;
+}
+
+
+/* چراغ اتصال */
+
+.status-light {
+    width: 14px;
+    height: 14px;
+
+    justify-self: end;
+
+    border-radius: 50%;
+
+    background: var(--green);
+
+    box-shadow:
+        0 0 0 5px rgba(255,255,255,.16),
+        0 0 14px rgba(25,195,125,.8);
+}
+
+
+/* =================================
+   اتصال به پوشه
+================================= */
+
+.folder-button {
+    display: block;
+
+    margin: 16px auto 0;
+
+    height: 40px;
+
+    padding: 0 20px;
+
+    border: 1px solid rgba(255,255,255,.5);
+    border-radius: 12px;
+
+    background: rgba(255,255,255,.16);
+
+    color: white;
+
+    font-family: inherit;
+    font-size: 12px;
+
+    cursor: pointer;
+
+    backdrop-filter: blur(5px);
+}
+
+
+/* =================================
+   محتوای صفحه
+================================= */
+
+.content {
+    position: absolute;
+
+    top: 145px;
+    right: 0;
+    left: 0;
+    bottom: 76px;
+
+    overflow-y: auto;
+
+    padding: 35px 18px 35px;
+
+    scrollbar-width: none;
+
+    z-index: 5;
+}
+
+.content::-webkit-scrollbar {
+    display: none;
+}
+
+
+/* =================================
+   جستجو
+================================= */
+
+.search-box {
+    width: 100%;
+    height: 58px;
+
+    background: white;
+
+    border: 1px solid var(--border);
+
+    border-radius: 16px;
+
+    display: flex;
+    align-items: center;
+
+    padding: 5px 7px 5px 16px;
+
+    box-shadow: 0 5px 18px rgba(20,33,61,.05);
+}
+
+.search-box input {
+    flex: 1;
+    min-width: 0;
+
+    border: none;
+    outline: none;
+
+    background: transparent;
+
+    font-family: inherit;
+    font-size: 13px;
+}
+
+.search-box input::placeholder {
+    color: #9aa3af;
+}
+
+
+/* دکمه اسکن */
+
+.scan-button {
+    width: 46px;
+    height: 46px;
+
+    border: none;
+
+    border-radius: 13px;
+
+    background: #e7faf3;
+
+    color: #19a974;
+
+    font-size: 21px;
+
+    cursor: pointer;
+}
+
+
+/* =================================
+   کارت کالا
+================================= */
+
+.product-card {
+    margin-top: 18px;
+
+    background: white;
+
+    border: 1px solid var(--border);
+
+    border-radius: 18px;
+
+    padding: 17px;
+
+    box-shadow: 0 5px 18px rgba(20,33,61,.05);
+}
+
+.product-name {
+    font-size: 15px;
+    font-weight: bold;
+}
+
+.product-barcode {
+    margin-top: 8px;
+
+    direction: ltr;
+    text-align: right;
+
+    font-family: Arial, sans-serif;
+
+    color: #929baa;
+
+    font-size: 11px;
+}
+
+.product-price {
+    margin-top: 9px;
+
+    color: #172033;
+
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.product-actions {
+    display: flex;
+
+    align-items: center;
+
+    gap: 9px;
+
+    margin-top: 16px;
+}
+
+.add-button {
+    flex: 1;
+
+    height: 45px;
+
+    border: none;
+
+    border-radius: 13px;
+
+    background: #19b394;
+
+    color: white;
+
+    font-family: inherit;
+
+    font-size: 13px;
+    font-weight: bold;
+
+    cursor: pointer;
+}
+
+.quantity {
+    width: 65px;
+    height: 45px;
+
+    border: 1px solid #dfe4ea;
+
+    border-radius: 13px;
+
+    background: #fafbfc;
+
+    outline: none;
+
+    text-align: center;
+
+    font-family: inherit;
+
+    font-size: 14px;
+    font-weight: bold;
+}
+
+
+/* =================================
+   لیست
+================================= */
+
+.section-title {
+    margin-top: 27px;
+    margin-bottom: 12px;
+
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.cart {
+    background: white;
+
+    border: 1px solid var(--border);
+
+    border-radius: 18px;
+
+    overflow: hidden;
+}
+
+.cart-item {
+    min-height: 66px;
+
+    padding: 13px 15px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: space-between;
+
+    border-bottom: 1px solid #edf0f3;
+}
+
+.cart-item:last-child {
+    border-bottom: none;
+}
+
+.cart-name {
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.cart-price {
+    margin-top: 5px;
+
+    color: #929baa;
+
+    font-size: 10px;
+}
+
+.cart-count {
+    min-width: 36px;
+    height: 30px;
+
+    border-radius: 9px;
+
+    background: #e7faf3;
+
+    color: #19a974;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 12px;
+    font-weight: bold;
+}
+
+
+/* =================================
+   منوی پایین
+================================= */
+
+.bottom-nav {
+    position: absolute;
+
+    right: 0;
+    left: 0;
+    bottom: 0;
+
+    height: 76px;
+
+    background: rgba(255,255,255,.98);
+
+    border-top: 1px solid #e8ebef;
+
+    display: grid;
+
+    grid-template-columns: repeat(3,1fr);
+
+    z-index: 30;
+}
+
+.nav-button {
+    border: none;
+
+    background: transparent;
+
+    color: #929baa;
+
+    font-family: inherit;
+
+    font-size: 11px;
+
+    cursor: pointer;
+}
+
+.nav-icon {
+    width: 35px;
+    height: 35px;
+
+    margin: 0 auto 4px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 11px;
+
+    font-size: 18px;
+}
+
+.nav-button.active {
+    color: #19a974;
+
+    font-weight: bold;
+}
+
+.nav-button.active .nav-icon {
+    background: #e7faf3;
+}
+
+
+/* =================================
+   صفحه‌های بزرگ
+================================= */
+
+@media (min-width: 700px) {
+
+    body {
+        padding: 20px 0;
+    }
+
+    .app {
+        height: calc(100vh - 40px);
+
+        border-radius: 25px;
+
+        overflow: hidden;
+
+        box-shadow: 0 15px 50px rgba(20,33,61,.10);
+    }
+}
+</style>
+</head>
+
+
+<body>
+
+<div class="app">
+
+
+    <!-- =========================
+         هدر ثابت
+    ========================== -->
+
+    <header class="top-header">
+
+        <div class="header-content">
+
+            <div class="header-row">
+
+                <!-- سه خط -->
+                <button class="menu-button">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+
+
+                <!-- نام فروشگاه -->
+                <div class="shop-name">
+                    فروشگاه من
+                </div>
+
+
+                <!-- چراغ وضعیت -->
+                <div class="status-light"></div>
+
+            </div>
+
+
+            <!-- اتصال به پوشه -->
+            <button class="folder-button">
+                اتصال به پوشه
+            </button>
+
+        </div>
+
+    </header>
+
+
+
+    <!-- =========================
+         محتوای فروش
+    ========================== -->
+
+    <main class="content">
+
+        <div class="search-box">
+
+            <input
+                type="text"
+                placeholder="نام کالا یا بارکد..."
+            >
+
+            <button class="scan-button">
+                ▣
+            </button>
+
+        </div>
+
+
+        <!-- نمونه کالا -->
+
+        <div class="product-card">
+
+            <div class="product-name">
+                نوشابه کوکاکولا
+            </div>
+
+            <div class="product-barcode">
+                6261234567890
+            </div>
+
+            <div class="product-price">
+                35,000 تومان
+            </div>
+
+
+            <div class="product-actions">
+
+                <button class="add-button">
+                    اضافه کردن
+                </button>
+
+                <input
+                    class="quantity"
+                    type="number"
+                    min="1"
+                    value="1"
+                >
+
+            </div>
+
+        </div>
+
+
+        <div class="section-title">
+            کالاهای انتخاب‌شده
+        </div>
+
+
+        <div class="cart">
+
+            <div class="cart-item">
+
+                <div>
+                    <div class="cart-name">
+                        نوشابه کوکاکولا
+                    </div>
+
+                    <div class="cart-price">
+                        35,000 تومان
+                    </div>
+                </div>
+
+                <div class="cart-count">
+                    × 2
+                </div>
+
+            </div>
+
+
+            <div class="cart-item">
+
+                <div>
+                    <div class="cart-name">
+                        چیپس مزمز
+                    </div>
+
+                    <div class="cart-price">
+                        28,000 تومان
+                    </div>
+                </div>
+
+                <div class="cart-count">
+                    × 1
+                </div>
+
+            </div>
+
+
+            <div class="cart-item">
+
+                <div>
+                    <div class="cart-name">
+                        آب معدنی
+                    </div>
+
+                    <div class="cart-price">
+                        12,000 تومان
+                    </div>
+                </div>
+
+                <div class="cart-count">
+                    × 3
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- فقط برای ایجاد اسکرول نمونه -->
+
+        <div style="height:250px;"></div>
+
+    </main>
+
+
+
+    <!-- =========================
+         منوی پایین ثابت
+    ========================== -->
+
+    <nav class="bottom-nav">
+
+        <button class="nav-button">
+            <div class="nav-icon">▣</div>
+            انبار
+        </button>
+
+
+        <button class="nav-button">
+            <div class="nav-icon">⌂</div>
+            خانه
+        </button>
+
+
+        <button class="nav-button active">
+            <div class="nav-icon">▤</div>
+            فروش
+        </button>
+
+    </nav>
+
+</div>
+
+</body>
+</html>
