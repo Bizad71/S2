@@ -817,6 +817,114 @@ async function writeDataToFolder(
 }
 
 
+
+/* ============================================================
+   EXPORT ALL SALES TO ONE EXCEL-COMPATIBLE FILE
+   ============================================================ */
+
+const SALES_EXCEL_FILE_NAME = "فروش‌ها.xls";
+
+function excelEscape(value) {
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+}
+
+function buildSalesExcelHTML() {
+    const rows = [];
+
+    for (const sale of database.sales || []) {
+        const items = (database.sale_items || []).filter(
+            item => item.saleId === sale.id
+        );
+
+        if (!items.length) {
+            rows.push({
+                saleId: sale.id,
+                createdAt: sale.createdAt,
+                product: "",
+                quantity: "",
+                unitPrice: "",
+                totalPrice: sale.totalAmount || 0,
+                discount: sale.discount || 0,
+                finalAmount: sale.finalAmount || 0
+            });
+            continue;
+        }
+
+        for (const item of items) {
+            const product = (database.products || []).find(
+                p => p.id === item.productId
+            );
+
+            rows.push({
+                saleId: sale.id,
+                createdAt: sale.createdAt,
+                product: product ? product.name : item.productId,
+                quantity: item.quantity,
+                unitPrice: item.unitPrice,
+                totalPrice: item.totalPrice,
+                discount: sale.discount || 0,
+                finalAmount: sale.finalAmount || 0
+            });
+        }
+    }
+
+    let html = `<!DOCTYPE html><html lang="fa" dir="rtl"><head><meta charset="UTF-8"><style>
+        table{border-collapse:collapse;font-family:Tahoma,Arial;font-size:11pt}
+        th,td{border:1px solid #999;padding:6px;white-space:nowrap}
+        th{font-weight:bold}
+    </style></head><body><table>`;
+
+    html += `<tr>
+        <th>شماره فروش</th>
+        <th>تاریخ و ساعت</th>
+        <th>کالا</th>
+        <th>تعداد</th>
+        <th>قیمت واحد</th>
+        <th>مبلغ کالا</th>
+        <th>تخفیف</th>
+        <th>مبلغ نهایی فاکتور</th>
+    </tr>`;
+
+    for (const row of rows) {
+        html += `<tr>
+            <td>${excelEscape(row.saleId)}</td>
+            <td>${excelEscape(row.createdAt)}</td>
+            <td>${excelEscape(row.product)}</td>
+            <td>${excelEscape(row.quantity)}</td>
+            <td>${excelEscape(row.unitPrice)}</td>
+            <td>${excelEscape(row.totalPrice)}</td>
+            <td>${excelEscape(row.discount)}</td>
+            <td>${excelEscape(row.finalAmount)}</td>
+        </tr>`;
+    }
+
+    html += `</table></body></html>`;
+    return html;
+}
+
+async function writeSalesExcelToFolder() {
+    if (!folderHandle || !folderPermissionGranted) return false;
+
+    try {
+        const fileHandle = await folderHandle.getFileHandle(
+            SALES_EXCEL_FILE_NAME,
+            { create: true }
+        );
+
+        const writable = await fileHandle.createWritable();
+        await writable.write(buildSalesExcelHTML());
+        await writable.close();
+        return true;
+    } catch (error) {
+        console.error("writeSalesExcelToFolder:", error);
+        return false;
+    }
+}
+
 /* ============================================================
    CHECK IF DATABASE HAS REAL DATA
    ============================================================ */
@@ -939,6 +1047,7 @@ async function connectSelectedFolder(
             );
         }
 
+        await writeSalesExcelToFolder();
 
         folderConnected = true;
 
@@ -2780,65 +2889,6 @@ async function renderCart() {
 
 
 /* ============================================================
-   SAVE INVOICE TO CONNECTED FOLDER
-   ============================================================ */
-
-async function saveInvoiceToFolder(sale, saleItems) {
-
-    if (!folderHandle || !folderPermissionGranted) return;
-
-    try {
-        const invoicesFolder =
-            await folderHandle.getDirectoryHandle("فاکتورها", {
-                create: true
-            });
-
-        const invoiceNumber =
-            String(database.sales.length).padStart(4, "0");
-
-        const rows = saleItems.map(item => `
-            <tr>
-                <td>${escapeHTML(item.productName)}</td>
-                <td>${item.quantity}</td>
-                <td>${formatMoney(item.unitPrice)}</td>
-                <td>${formatMoney(item.totalPrice)}</td>
-            </tr>
-        `).join("");
-
-        const html = `<!doctype html>
-<html lang="fa" dir="rtl">
-<head>
-<meta charset="UTF-8">
-<title>فاکتور ${invoiceNumber}</title>
-<style>
-body{font-family:Tahoma,Arial,sans-serif;max-width:800px;margin:40px auto;padding:20px;color:#111}
-h1{text-align:center}.info{display:flex;justify-content:space-between;margin:20px 0}
-table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:10px;text-align:center}
-.total{margin-top:20px;text-align:left;font-size:20px;font-weight:bold}
-</style></head><body>
-<h1>فاکتور فروش</h1>
-<div class="info"><span>شماره فاکتور: ${invoiceNumber}</span><span>تاریخ: ${new Date(sale.createdAt).toLocaleString("fa-IR")}</span></div>
-<table><thead><tr><th>کالا</th><th>تعداد</th><th>قیمت واحد</th><th>مبلغ</th></tr></thead>
-<tbody>${rows}</tbody></table>
-<div class="total">مبلغ نهایی: ${formatMoney(sale.finalAmount)}</div>
-</body></html>`;
-
-        const fileHandle = await invoicesFolder.getFileHandle(
-            `فاکتور-${invoiceNumber}-${sale.id}.html`,
-            { create: true }
-        );
-
-        const writable = await fileHandle.createWritable();
-        await writable.write(html);
-        await writable.close();
-
-    } catch (error) {
-        console.error("Invoice save:", error);
-    }
-}
-
-
-/* ============================================================
    CHECKOUT
    ============================================================ */
 
@@ -2922,9 +2972,6 @@ async function checkout() {
                     "saleitem"
                 ),
 
-            productName:
-                product.name,
-
             saleId:
                 saleId,
 
@@ -3000,12 +3047,7 @@ async function checkout() {
         );
     }
 
-
-    await saveInvoiceToFolder(
-        database.sales[database.sales.length - 1],
-        saleItems
-    );
-
+    await writeSalesExcelToFolder();
 
     cart = [];
 
