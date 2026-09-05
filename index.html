@@ -19,7 +19,7 @@
         content="Bizadshop - مدیریت فروشگاه"
     >
 
-    <title>Bizadshop</title>
+    <title>My Shop</title>
 
     <link rel="stylesheet" href="style.css">
 </head>
@@ -34,7 +34,7 @@
 
         <div class="brand-area">
 
-            <h1>Bizadshop</h1>
+            <h1>بیزامارکت</h1>
 
             <span>مدیریت فروشگاه</span>
 
@@ -42,7 +42,7 @@
                 id="connectionStatus"
                 class="connection-status"
             >
-                در حال بارگذاری اطلاعات...
+                در حال اتصال به دیتابیس ...
             </div>
 
         </div>
@@ -51,7 +51,7 @@
             class="icon-button"
             id="settingsBtn"
             type="button"
-            title="اتصال پوشه"
+            title="ارتباط برقرار شد"
         >
             📁
         </button>
@@ -109,9 +109,36 @@
             <div class="page-title">
 
                 <div>
-                    <h2>داشبورد</h2>
                     <p>خلاصه وضعیت فروشگاه</p>
                 </div>
+
+
+                
+                <div class="dashboard-actions">
+
+                <button
+                    class="big-action primary"
+                    id="quickAddProduct"
+                    type="button"
+                >
+                    <span>➕</span>
+                    <strong>افزودن کالا</strong>
+                    <small>ثبت کالای جدید</small>
+                </button>
+
+
+                <button
+                    class="big-action"
+                    id="quickSale"
+                    type="button"
+                >
+                    <span>🛒</span>
+                    <strong>ثبت فروش</strong>
+                    <small>شروع فروش جدید</small>
+                </button>
+
+            </div>
+
 
             </div>
 
@@ -168,37 +195,12 @@
             </div>
 
 
-            <div class="dashboard-actions">
-
-                <button
-                    class="big-action primary"
-                    id="quickAddProduct"
-                    type="button"
-                >
-                    <span>➕</span>
-                    <strong>افزودن کالا</strong>
-                    <small>ثبت کالای جدید</small>
-                </button>
-
-
-                <button
-                    class="big-action"
-                    id="quickSale"
-                    type="button"
-                >
-                    <span>🛒</span>
-                    <strong>ثبت فروش</strong>
-                    <small>شروع فروش جدید</small>
-                </button>
-
-            </div>
-
-
+            
             <div class="section-card">
 
                 <div class="section-header">
 
-                    <h3>کالاهای کم‌موجودی</h3>
+                    <h3>کالاهای در حال اتمام</h3>
 
                     <button
                         id="showLowStock"
