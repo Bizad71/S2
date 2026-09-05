@@ -6,17 +6,17 @@ const HANDLE_KEY="database-folder";
 let databaseDirectory=null;
 let connected=false;
 let scannerTarget="sale";
-let saleCart=[];
 let products=[];
 let inventory=[];
+let invoices=[];
+let saleCart=[];
 let productsByBarcode=new Map();
 let productsById=new Map();
 let inventoryByProductId=new Map();
 let shopInfo={};
 let shopSettings={};
-let invoiceCache=[];
-let writeQueue=Promise.resolve();
 let toastTimer=null;
+let saveTimer=null;
 
 const $=id=>document.getElementById(id);
 
@@ -24,59 +24,52 @@ function money(value){
 return new Intl.NumberFormat("fa-IR").format(Number(value)||0)+" تومان";
 }
 
-function numberFa(value){
+function fa(value){
 return new Intl.NumberFormat("fa-IR").format(Number(value)||0);
 }
 
 function normalizeDigits(value=""){
-return String(value)
-.replace(/[۰-۹]/g,d=>"۰۱۲۳۴۵۶۷۸۹".indexOf(d))
-.replace(/[٠-٩]/g,d=>"٠١٢٣٤٥٦٧٨٩".indexOf(d));
+return String(value).replace(/[۰-۹]/g,d=>"۰۱۲۳۴۵۶۷۸۹".indexOf(d)).replace(/[٠-٩]/g,d=>"٠١٢٣٤٥٦٧٨٩".indexOf(d));
 }
 
-function normalizeBarcode(value=""){
+function barcode(value=""){
 return normalizeDigits(value).trim();
 }
 
 function escapeHTML(value=""){
-return String(value)
-.replace(/&/g,"&")
-.replace(/</g,"<")
-.replace(/>/g,">")
-.replace(/"/g,""")
-.replace(/'/g,"'");
+return String(value).replace(/&/g,"&").replace(/</g,"<").replace(/>/g,">").replace(/"/g,""").replace(/'/g,"'");
 }
 
 function toast(message){
 clearTimeout(toastTimer);
 $("toast").textContent=message;
 $("toast").classList.add("show");
-toastTimer=setTimeout(()=>$("toast").classList.remove("show"),2300);
+toastTimer=setTimeout(()=>$("toast").classList.remove("show"),2200);
 }
 
-function setConnectionStatus(state){
+function setConnection(state){
 connected=state;
 $("connectionLight").classList.toggle("connected",state);
 $("folderButton").classList.toggle("connected",state);
 $("folderButton").textContent=state?"دیتابیس متصل است":"اتصال به دیتابیس";
 $("lockScreen").classList.toggle("hidden",state);
-document.body.classList.toggle("site-locked",!state);
 }
 
-function openHandleDB(){
+function openIDB(){
 return new Promise((resolve,reject)=>{
 const request=indexedDB.open(DB_NAME,DB_VERSION);
 request.onupgradeneeded=()=>{
-const db=request.result;
-if(!db.objectStoreNames.contains(HANDLE_STORE))db.createObjectStore(HANDLE_STORE);
+if(!request.result.objectStoreNames.contains(HANDLE_STORE)){
+request.result.createObjectStore(HANDLE_STORE);
+}
 };
 request.onsuccess=()=>resolve(request.result);
 request.onerror=()=>reject(request.error);
 });
 }
 
-async function saveDirectoryHandle(handle){
-const db=await openHandleDB();
+async function saveHandle(handle){
+const db=await openIDB();
 return new Promise((resolve,reject)=>{
 const tx=db.transaction(HANDLE_STORE,"readwrite");
 tx.objectStore(HANDLE_STORE).put(handle,HANDLE_KEY);
@@ -85,221 +78,172 @@ tx.onerror=()=>{db.close();reject(tx.error)};
 });
 }
 
-async function getSavedDirectoryHandle(){
-const db=await openHandleDB();
+async function getHandle(){
+const db=await openIDB();
 return new Promise((resolve,reject)=>{
 const tx=db.transaction(HANDLE_STORE,"readonly");
-const request=tx.objectStore(HANDLE_STORE).get(HANDLE_KEY);
-request.onsuccess=()=>{db.close();resolve(request.result||null)};
-request.onerror=()=>{db.close();reject(request.error)};
+const req=tx.objectStore(HANDLE_STORE).get(HANDLE_KEY);
+req.onsuccess=()=>{db.close();resolve(req.result||null)};
+req.onerror=()=>{db.close();reject(req.error)};
 });
 }
 
-async function hasDirectoryPermission(handle){
-if(!handle)return false;
+async function permission(handle,request=false){
 try{
-return await handle.queryPermission({mode:"readwrite"})==="granted";
+const mode={mode:"readwrite"};
+const result=request?await handle.requestPermission(mode):await handle.queryPermission(mode);
+return result==="granted";
 }catch{
 return false;
 }
 }
 
-async function requestDirectoryPermission(handle){
+async function dir(parent,name){
+return parent.getDirectoryHandle(name,{create:true});
+}
+
+async function file(parent,name){
+return parent.getFileHandle(name,{create:true});
+}
+
+async function readJSON(parent,name,fallback){
 try{
-return await handle.requestPermission({mode:"readwrite"})==="granted";
-}catch{
-return false;
-}
-}
-
-async function getDirectory(dir,name,create=false){
-return await dir.getDirectoryHandle(name,{create});
-}
-
-async function getFile(dir,name,create=false){
-return await dir.getFileHandle(name,{create});
-}
-
-async function readJSON(dir,name,fallback=[]){
-try{
-const file=await getFile(dir,name,false);
-const data=await file.getFile();
-const text=await data.text();
-if(!text.trim())return fallback;
-return JSON.parse(text);
+const f=await parent.getFileHandle(name,{create:false});
+const text=await(await f.getFile()).text();
+return text.trim()?JSON.parse(text):fallback;
 }catch{
 return fallback;
 }
 }
 
-async function writeJSON(dir,name,data){
-const file=await getFile(dir,name,true);
-const writable=await file.createWritable();
-await writable.write(JSON.stringify(data,null,2));
-await writable.close();
+async function writeJSON(parent,name,data){
+const f=await file(parent,name);
+const w=await f.createWritable();
+await w.write(JSON.stringify(data,null,2));
+await w.close();
 }
 
-async function queuedWrite(dir,name,data){
-writeQueue=writeQueue.then(()=>writeJSON(dir,name,data)).catch(()=>{});
-return writeQueue;
-}
-
-async function ensureJSONFile(dir,name,initial){
+async function ensureJSON(parent,name,data){
 try{
-await getFile(dir,name,false);
+await parent.getFileHandle(name,{create:false});
 }catch{
-await writeJSON(dir,name,initial);
+await writeJSON(parent,name,data);
 }
 }
 
-async function createDatabaseStructure(){
-const system=await getDirectory(databaseDirectory,"system",true);
-const shop=await getDirectory(databaseDirectory,"shop",true);
-const users=await getDirectory(databaseDirectory,"users",true);
-const productsDir=await getDirectory(databaseDirectory,"products",true);
-const inventoryDir=await getDirectory(databaseDirectory,"inventory",true);
-const sales=await getDirectory(databaseDirectory,"sales",true);
-await getDirectory(databaseDirectory,"backups",true);
+async function createStructure(){
+const system=await dir(databaseDirectory,"system");
+const shop=await dir(databaseDirectory,"shop");
+const users=await dir(databaseDirectory,"users");
+const productsDir=await dir(databaseDirectory,"products");
+const inventoryDir=await dir(databaseDirectory,"inventory");
+const sales=await dir(databaseDirectory,"sales");
+await dir(databaseDirectory,"backups");
 
-await ensureJSONFile(system,"database.json",{
+await ensureJSON(system,"database.json",{
 id:crypto.randomUUID(),
 created_at:new Date().toISOString(),
 last_update:new Date().toISOString()
 });
 
-await ensureJSONFile(system,"version.json",{
-version:"1.0.0"
-});
-
-await ensureJSONFile(shop,"info.json",{
-name:"فروشگاه من",
-phone:"",
-address:"",
-created_at:new Date().toISOString()
-});
-
-await ensureJSONFile(shop,"settings.json",{
-currency:"تومان",
-invoice_prefix:"INV",
-next_invoice_number:1
-});
-
-await ensureJSONFile(users,"users.json",[]);
-await ensureJSONFile(productsDir,"products.json",[]);
-await ensureJSONFile(inventoryDir,"inventory.json",[]);
-await ensureJSONFile(sales,"invoices.json",[]);
-await ensureJSONFile(sales,"items.json",[]);
+await ensureJSON(system,"version.json",{version:"1.0.0"});
+await ensureJSON(shop,"info.json",{name:"فروشگاه من",phone:"",address:"",created_at:new Date().toISOString()});
+await ensureJSON(shop,"settings.json",{currency:"تومان",invoice_prefix:"INV",next_invoice_number:1});
+await ensureJSON(users,"users.json",[]);
+await ensureJSON(productsDir,"products.json",[]);
+await ensureJSON(inventoryDir,"inventory.json",[]);
+await ensureJSON(sales,"invoices.json",[]);
+await ensureJSON(sales,"items.json",[]);
 }
 
-async function loadDatabaseCache(){
-const shopDir=await getDirectory(databaseDirectory,"shop");
-const productsDir=await getDirectory(databaseDirectory,"products");
-const inventoryDir=await getDirectory(databaseDirectory,"inventory");
-const salesDir=await getDirectory(databaseDirectory,"sales");
+async function loadCache(){
+const shop=await dir(databaseDirectory,"shop");
+const productsDir=await dir(databaseDirectory,"products");
+const inventoryDir=await dir(databaseDirectory,"inventory");
+const sales=await dir(databaseDirectory,"sales");
 
-const results=await Promise.all([
-readJSON(shopDir,"info.json",{}),
-readJSON(shopDir,"settings.json",{}),
+const [info,settings,p,invs,inv]=await Promise.all([
+readJSON(shop,"info.json",{}),
+readJSON(shop,"settings.json",{}),
 readJSON(productsDir,"products.json",[]),
 readJSON(inventoryDir,"inventory.json",[]),
-readJSON(salesDir,"invoices.json",[])
+readJSON(sales,"invoices.json",[])
 ]);
 
-shopInfo=results[0]||{};
-shopSettings=results[1]||{};
-products=Array.isArray(results[2])?results[2]:[];
-inventory=Array.isArray(results[3])?results[3]:[];
-invoiceCache=Array.isArray(results[4])?results[4]:[];
+shopInfo=info||{};
+shopSettings=settings||{};
+products=Array.isArray(p)?p:[];
+inventory=Array.isArray(invs)?invs:[];
+invoices=Array.isArray(inv)?inv:[];
 
-productsByBarcode.clear();
-productsById.clear();
-inventoryByProductId.clear();
+productsByBarcode=new Map();
+productsById=new Map();
+inventoryByProductId=new Map();
 
-for(const product of products){
-productsById.set(product.id,product);
-productsByBarcode.set(normalizeBarcode(product.barcode),product);
+for(const p of products){
+productsByBarcode.set(barcode(p.barcode),p);
+productsById.set(p.id,p);
 }
 
-for(const item of inventory){
-inventoryByProductId.set(item.product_id,Number(item.stock)||0);
+for(const i of inventory){
+inventoryByProductId.set(i.product_id,Number(i.stock)||0);
 }
 
 $("shopName").textContent=shopInfo.name||"فروشگاه من";
 $("settingsShopName").value=shopInfo.name||"فروشگاه من";
 $("settingsCurrency").value=shopSettings.currency||"تومان";
+
+refreshHome();
+renderInventory();
 }
 
 async function connectDatabase(){
 if(!window.showDirectoryPicker){
-toast("این مرورگر از اتصال مستقیم پوشه پشتیبانی نمی‌کند.");
+toast("مرورگر شما از اتصال پوشه پشتیبانی نمی‌کند.");
 return;
 }
 
 try{
 const handle=await window.showDirectoryPicker({mode:"readwrite"});
-const permission=await requestDirectoryPermission(handle);
-
-if(!permission){
+if(!await permission(handle,true)){
 toast("دسترسی به پوشه داده نشد.");
 return;
 }
 
 databaseDirectory=handle;
-await createDatabaseStructure();
-await saveDirectoryHandle(handle);
-await loadDatabaseCache();
-
-setConnectionStatus(true);
+await createStructure();
+await saveHandle(handle);
+await loadCache();
+setConnection(true);
 showPage("homePage");
-refreshHome();
-renderInventory();
+toast("دیتابیس متصل شد.");
 }catch(error){
-if(error&&error.name==="AbortError")return;
-toast("اتصال به دیتابیس انجام نشد.");
+if(error?.name!=="AbortError")toast("اتصال انجام نشد.");
 }
 }
 
-async function restoreDatabaseConnection(){
+async function restoreConnection(){
 try{
-const handle=await getSavedDirectoryHandle();
+const handle=await getHandle();
 if(!handle)return;
-
-const permission=await hasDirectoryPermission(handle);
-if(!permission)return;
+if(!await permission(handle,false))return;
 
 databaseDirectory=handle;
-await createDatabaseStructure();
-await loadDatabaseCache();
-
-setConnectionStatus(true);
-refreshHome();
-renderInventory();
+await createStructure();
+await loadCache();
+setConnection(true);
 }catch{}
 }
 
-function requireConnection(){
+function showPage(id){
 if(!connected){
 toast("ابتدا دیتابیس را متصل کنید.");
-return false;
-}
-return true;
+return;
 }
 
-function showPage(pageId){
-if(!requireConnection())return;
-
-document.querySelectorAll(".page").forEach(page=>{
-page.classList.toggle("active",page.id===pageId);
-});
-
-document.querySelectorAll(".nav-btn").forEach(btn=>{
-btn.classList.toggle("active",btn.dataset.page===pageId);
-});
-
+document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id===id));
+document.querySelectorAll(".nav-btn").forEach(b=>b.classList.toggle("active",b.dataset.page===id));
 $("menuOverlay").classList.remove("open");
-
-if(pageId==="homePage")refreshHome();
-if(pageId==="inventoryPage")renderInventory();
 }
 
 function openMenu(){
@@ -311,16 +255,16 @@ $("menuOverlay").classList.add("open");
 }
 
 function openProductModal(){
-if(!requireConnection())return;
+if(!connected)return;
 $("productOverlay").classList.add("open");
-$("productBarcode").focus();
+setTimeout(()=>$("productBarcode").focus(),50);
 }
 
 function closeProductModal(){
 $("productOverlay").classList.remove("open");
 }
 
-function clearProductForm(){
+function resetProductForm(){
 $("productBarcode").value="";
 $("productName").value="";
 $("productPurchasePrice").value="";
@@ -330,133 +274,97 @@ $("productCategory").value="نوشیدنی";
 $("productUnit").value="عدد";
 }
 
+async function saveProductsAndInventory(){
+const productsDir=await dir(databaseDirectory,"products");
+const inventoryDir=await dir(databaseDirectory,"inventory");
+
+await Promise.all([
+writeJSON(productsDir,"products.json",products),
+writeJSON(inventoryDir,"inventory.json",inventory)
+]);
+}
+
 async function registerProduct(){
-if(!requireConnection())return;
-
-const barcode=normalizeBarcode($("productBarcode").value);
+const code=barcode($("productBarcode").value);
 const name=$("productName").value.trim();
-const category=$("productCategory").value;
-const purchasePrice=Number(normalizeDigits($("productPurchasePrice").value))||0;
-const salePrice=Number(normalizeDigits($("productSalePrice").value))||0;
-const unit=$("productUnit").value;
+const purchase=Number(normalizeDigits($("productPurchasePrice").value))||0;
+const sale=Number(normalizeDigits($("productSalePrice").value))||0;
 const quantity=Math.max(0,Number(normalizeDigits($("productQuantity").value))||0);
+const category=$("productCategory").value;
+const unit=$("productUnit").value;
 
-if(!barcode){
-toast("بارکد را وارد کنید.");
-return;
-}
-
-if(!name){
-toast("نام کالا را وارد کنید.");
-return;
-}
-
-if(productsByBarcode.has(barcode)){
-toast("این بارکد قبلاً ثبت شده است.");
-return;
-}
+if(!code)return toast("بارکد را وارد کنید.");
+if(!name)return toast("نام کالا را وارد کنید.");
+if(productsByBarcode.has(code))return toast("این بارکد قبلاً ثبت شده است.");
 
 const product={
 id:crypto.randomUUID(),
-barcode,
+barcode:code,
 name,
 category,
-purchase_price:purchasePrice,
-sale_price:salePrice,
+purchase_price:purchase,
+sale_price:sale,
 unit,
 created_at:new Date().toISOString()
 };
 
-const stockItem={
-product_id:product.id,
-stock:quantity
-};
-
 products.push(product);
-inventory.push(stockItem);
+inventory.push({product_id:product.id,stock:quantity});
+productsByBarcode.set(code,product);
 productsById.set(product.id,product);
-productsByBarcode.set(barcode,product);
 inventoryByProductId.set(product.id,quantity);
 
-const productsDir=await getDirectory(databaseDirectory,"products");
-const inventoryDir=await getDirectory(databaseDirectory,"inventory");
+await saveProductsAndInventory();
 
-await Promise.all([
-queuedWrite(productsDir,"products.json",products),
-queuedWrite(inventoryDir,"inventory.json",inventory)
-]);
-
-clearProductForm();
+resetProductForm();
 closeProductModal();
 refreshHome();
 renderInventory();
-toast("کالا با موفقیت ثبت شد.");
+toast("کالا ثبت شد.");
 }
 
-function findProductByBarcode(barcode){
-return productsByBarcode.get(normalizeBarcode(barcode))||null;
-}
-
-function showSaleProduct(product){
-if(!product){
-$("saleProductCard").classList.add("hidden");
-return;
-}
-
-const stock=inventoryByProductId.get(product.id)||0;
-
-$("saleProductCard").classList.remove("hidden");
-$("saleProductName").textContent=product.name;
-$("saleProductBarcode").textContent="بارکد: "+product.barcode;
-$("saleProductStock").textContent="موجودی: "+numberFa(stock)+" "+(product.unit||"عدد");
-$("saleProductPrice").textContent=money(product.sale_price);
-$("saleQuantity").value="1";
+function findProduct(code){
+return productsByBarcode.get(barcode(code))||null;
 }
 
 function searchSaleProduct(){
-if(!requireConnection())return;
-
-const barcode=normalizeBarcode($("barcodeInput").value);
-
-if(!barcode){
+const code=barcode($("barcodeInput").value);
+if(!code){
 $("saleProductCard").classList.add("hidden");
 return;
 }
 
-const product=findProductByBarcode(barcode);
+const product=findProduct(code);
 
 if(!product){
 $("saleProductCard").classList.add("hidden");
-toast("کالایی با این بارکد پیدا نشد.");
-return;
-}
-
-showSaleProduct(product);
-}
-
-function addToCart(){
-if(!requireConnection())return;
-
-const barcode=normalizeBarcode($("barcodeInput").value);
-const product=findProductByBarcode(barcode);
-
-if(!product){
-toast("ابتدا کالا را پیدا کنید.");
+toast("کالا پیدا نشد.");
 return;
 }
 
 const stock=inventoryByProductId.get(product.id)||0;
-const quantity=Math.max(1,Number(normalizeDigits($("saleQuantity").value))||1);
-const existing=saleCart.find(item=>item.productId===product.id);
-const current=existing?existing.quantity:0;
 
-if(current+quantity>stock){
-toast("تعداد انتخابی بیشتر از موجودی است.");
-return;
+$("saleProductName").textContent=product.name;
+$("saleProductBarcode").textContent="بارکد: "+product.barcode;
+$("saleProductStock").textContent="موجودی: "+fa(stock)+" "+(product.unit||"عدد");
+$("saleProductPrice").textContent=money(product.sale_price);
+$("saleProductQuantity").value="1";
+$("saleProductCard").classList.remove("hidden");
 }
 
+function addToCart(){
+const product=findProduct($("barcodeInput").value);
+if(!product)return toast("ابتدا کالا را جستجو کنید.");
+
+const stock=inventoryByProductId.get(product.id)||0;
+const qty=Math.max(1,Number(normalizeDigits($("saleQuantity").value))||1);
+const existing=saleCart.find(x=>x.productId===product.id);
+const oldQty=existing?existing.quantity:0;
+
+if(oldQty+qty>stock)return toast("موجودی کافی نیست.");
+
 if(existing){
-existing.quantity+=quantity;
+existing.quantity+=qty;
 }else{
 saleCart.push({
 productId:product.id,
@@ -464,13 +372,12 @@ barcode:product.barcode,
 name:product.name,
 price:Number(product.sale_price)||0,
 unit:product.unit||"عدد",
-quantity
+quantity:qty
 });
 }
 
 $("barcodeInput").value="";
 $("saleProductCard").classList.add("hidden");
-$("saleQuantity").value="1";
 renderCart();
 }
 
@@ -483,64 +390,52 @@ $("saleTotal").textContent=money(0);
 return;
 }
 
-let total=0;
 let html="";
+let total=0;
 
 for(let i=0;i<saleCart.length;i++){
 const item=saleCart[i];
-const lineTotal=item.price*item.quantity;
-total+=lineTotal;
+const line=item.price*item.quantity;
+total+=line;
 
-html+=`
+html+=`<div class="cart-item">
 
-<div class="cart-item">
 <div class="cart-top">
 <div class="cart-name">${escapeHTML(item.name)}</div>
-<button class="remove-item" data-cart-index="${i}" type="button">حذف</button>
+<button class="remove-item" data-remove="${i}" type="button">حذف</button>
 </div>
 <div class="cart-details">
-<span>${numberFa(item.quantity)} ${escapeHTML(item.unit)}</span>
-<span>${money(item.price)} × ${numberFa(item.quantity)}</span>
+<span>${fa(item.quantity)} ${escapeHTML(item.unit)}</span>
+<span>${money(item.price)} × ${fa(item.quantity)}</span>
 </div>
 <div class="cart-details">
-<span>مبلغ کالا</span>
-<strong>${money(lineTotal)}</strong>
+<span>مبلغ</span>
+<strong>${money(line)}</strong>
 </div>
 </div>`;
 }list.innerHTML=html;
 $("saleTotal").textContent=money(total);
 }
 
-function removeCartItem(index){
-saleCart.splice(index,1);
-renderCart();
-}
-
 async function checkout(){
-if(!requireConnection())return;
-
-if(!saleCart.length){
-toast("فاکتور خالی است.");
-return;
-}
+if(!saleCart.length)return toast("فاکتور خالی است.");
 
 for(const item of saleCart){
-const current=inventoryByProductId.get(item.productId)||0;
-if(item.quantity>current){
-toast("موجودی "+item.name+" کافی نیست.");
-return;
-}
+const stock=inventoryByProductId.get(item.productId)||0;
+if(item.quantity>stock)return toast("موجودی "+item.name+" کافی نیست.");
 }
 
 const now=new Date().toISOString();
+const next=Number(shopSettings.next_invoice_number)||1;
 const prefix=shopSettings.invoice_prefix||"INV";
-const nextNumber=Number(shopSettings.next_invoice_number)||1;
-const invoiceNumber=prefix+"-"+String(nextNumber).padStart(6,"0");
+const invoiceNumber=prefix+"-"+String(next).padStart(6,"0");
 
 let total=0;
+let itemCount=0;
 
 for(const item of saleCart){
 total+=item.price*item.quantity;
+itemCount+=item.quantity;
 }
 
 const invoice={
@@ -548,11 +443,11 @@ id:crypto.randomUUID(),
 invoice_number:invoiceNumber,
 created_at:now,
 total,
-item_count:saleCart.reduce((sum,item)=>sum+item.quantity,0),
+item_count:itemCount,
 status:"completed"
 };
 
-const newItems=saleCart.map(item=>({
+const items=saleCart.map(item=>({
 id:crypto.randomUUID(),
 invoice_id:invoice.id,
 product_id:item.productId,
@@ -564,34 +459,29 @@ total:item.price*item.quantity
 }));
 
 for(const item of saleCart){
-const stock=inventory.find(x=>x.product_id===item.productId);
-if(stock){
-stock.stock=Math.max(0,(Number(stock.stock)||0)-item.quantity);
-inventoryByProductId.set(item.productId,stock.stock);
+const row=inventory.find(x=>x.product_id===item.productId);
+if(row){
+row.stock=Math.max(0,(Number(row.stock)||0)-item.quantity);
+inventoryByProductId.set(item.productId,row.stock);
 }
 }
 
-invoiceCache.push(invoice);
-shopSettings.next_invoice_number=nextNumber+1;
+const sales=await dir(databaseDirectory,"sales");
+const inventoryDir=await dir(databaseDirectory,"inventory");
+const shop=await dir(databaseDirectory,"shop");
 
-const salesDir=await getDirectory(databaseDirectory,"sales");
-const inventoryDir=await getDirectory(databaseDirectory,"inventory");
-const shopDir=await getDirectory(databaseDirectory,"shop");
+const existingItems=await readJSON(sales,"items.json",[]);
+const allItems=Array.isArray(existingItems)?existingItems.concat(items):items;
 
-const existingItems=await readJSON(salesDir,"items.json",[]);
-const allItems=Array.isArray(existingItems)?existingItems.concat(newItems):newItems;
+invoices.push(invoice);
+shopSettings.next_invoice_number=next+1;
 
 await Promise.all([
-queuedWrite(inventoryDir,"inventory.json",inventory),
-queuedWrite(salesDir,"invoices.json",invoiceCache),
-queuedWrite(salesDir,"items.json",allItems),
-queuedWrite(shopDir,"settings.json",shopSettings)
+writeJSON(inventoryDir,"inventory.json",inventory),
+writeJSON(sales,"invoices.json",invoices),
+writeJSON(sales,"items.json",allItems),
+writeJSON(shop,"settings.json",shopSettings)
 ]);
-
-const systemDir=await getDirectory(databaseDirectory,"system");
-const databaseInfo=await readJSON(systemDir,"database.json",{});
-databaseInfo.last_update=now;
-await queuedWrite(systemDir,"database.json",databaseInfo);
 
 saleCart=[];
 renderCart();
@@ -604,51 +494,36 @@ toast("فاکتور "+invoiceNumber+" ثبت شد.");
 }
 
 async function changeStock(productId,delta){
-if(!requireConnection())return;
+const row=inventory.find(x=>x.product_id===productId);
+if(!row)return;
 
-const item=inventory.find(x=>x.product_id===productId);
+row.stock=Math.max(0,(Number(row.stock)||0)+delta);
+inventoryByProductId.set(productId,row.stock);
 
-if(!item)return;
+const inventoryDir=await dir(databaseDirectory,"inventory");
+await writeJSON(inventoryDir,"inventory.json",inventory);
 
-const next=Math.max(0,(Number(item.stock)||0)+delta);
-item.stock=next;
-inventoryByProductId.set(productId,next);
-
-const inventoryDir=await getDirectory(databaseDirectory,"inventory");
-await queuedWrite(inventoryDir,"inventory.json",inventory);
-
-refreshHome();
 renderInventory();
+refreshHome();
 }
 
 async function deleteProduct(productId){
-if(!requireConnection())return;
-
 const product=productsById.get(productId);
 if(!product)return;
-
 if(!confirm("کالا حذف شود؟"))return;
 
-products=products.filter(item=>item.id!==productId);
-inventory=inventory.filter(item=>item.product_id!==productId);
-
+products=products.filter(x=>x.id!==productId);
+inventory=inventory.filter(x=>x.product_id!==productId);
 productsById.delete(productId);
-productsByBarcode.delete(normalizeBarcode(product.barcode));
+productsByBarcode.delete(barcode(product.barcode));
 inventoryByProductId.delete(productId);
+saleCart=saleCart.filter(x=>x.productId!==productId);
 
-saleCart=saleCart.filter(item=>item.productId!==productId);
-
-const productsDir=await getDirectory(databaseDirectory,"products");
-const inventoryDir=await getDirectory(databaseDirectory,"inventory");
-
-await Promise.all([
-queuedWrite(productsDir,"products.json",products),
-queuedWrite(inventoryDir,"inventory.json",inventory)
-]);
+await saveProductsAndInventory();
 
 renderInventory();
-renderCart();
 refreshHome();
+renderCart();
 toast("کالا حذف شد.");
 }
 
@@ -665,21 +540,20 @@ let html="";
 for(const product of products){
 const stock=inventoryByProductId.get(product.id)||0;
 
-html+=`
+html+=`<div class="inventory-item">
 
-<div class="inventory-item">
 <div class="inventory-head">
 <div>
 <div class="inventory-name">${escapeHTML(product.name)}</div>
 <div class="inventory-barcode">بارکد: ${escapeHTML(product.barcode)}</div>
 </div>
-<div class="inventory-stock">${numberFa(stock)}</div>
+<div class="inventory-stock">${fa(stock)}</div>
 </div>
 <div class="inventory-barcode">${escapeHTML(product.category||"سایر")} · ${escapeHTML(product.unit||"عدد")}</div>
 <div class="inventory-actions">
-<button class="stock-btn" data-stock-plus="${product.id}" type="button">+</button>
-<button class="stock-btn" data-stock-minus="${product.id}" type="button">−</button>
-<button class="delete-btn" data-delete-product="${product.id}" type="button">حذف کالا</button>
+<button class="stock-btn" data-plus="${product.id}" type="button">+</button>
+<button class="stock-btn" data-minus="${product.id}" type="button">−</button>
+<button class="delete-btn" data-delete="${product.id}" type="button">حذف کالا</button>
 </div>
 </div>`;
 }list.innerHTML=html;
@@ -695,167 +569,138 @@ stockTotal+=stock;
 if(stock<=5)low++;
 }
 
-const today=new Date();
-const y=today.getFullYear();
-const m=today.getMonth();
-const d=today.getDate();
-
+const now=new Date();
 let salesTotal=0;
-let invoiceCount=0;
+let count=0;
 
-for(const invoice of invoiceCache){
-const date=new Date(invoice.created_at);
-if(date.getFullYear()===y&&date.getMonth()===m&&date.getDate()===d){
+for(const invoice of invoices){
+const d=new Date(invoice.created_at);
+if(d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth()&&d.getDate()===now.getDate()){
 salesTotal+=Number(invoice.total)||0;
-invoiceCount++;
+count++;
 }
 }
 
 $("todaySales").textContent=money(salesTotal);
-$("todaySalesSub").textContent=invoiceCount?numberFa(invoiceCount)+" فاکتور امروز":"بدون فروش";
-$("totalStock").textContent=numberFa(stockTotal);
-$("lowStock").textContent=numberFa(low);
+$("todaySalesSub").textContent=count?fa(count)+" فاکتور امروز":"بدون فروش";
+$("totalStock").textContent=fa(stockTotal);
+$("lowStock").textContent=fa(low);
 }
 
 async function saveSettings(){
-if(!requireConnection())return;
+shopInfo.name=$("settingsShopName").value.trim()||"فروشگاه من";
+shopSettings.currency=$("settingsCurrency").value;
+$("shopName").textContent=shopInfo.name;
 
-const name=$("settingsShopName").value.trim()||"فروشگاه من";
-const currency=$("settingsCurrency").value;
-
-shopInfo.name=name;
-shopSettings.currency=currency;
-
-$("shopName").textContent=name;
-
-const shopDir=await getDirectory(databaseDirectory,"shop");
+const shop=await dir(databaseDirectory,"shop");
 
 await Promise.all([
-queuedWrite(shopDir,"info.json",shopInfo),
-queuedWrite(shopDir,"settings.json",shopSettings)
+writeJSON(shop,"info.json",shopInfo),
+writeJSON(shop,"settings.json",shopSettings)
 ]);
 
 toast("تنظیمات ذخیره شد.");
 }
 
-function launchBinaryEye(target){
-if(!requireConnection())return;
+function launchScanner(target){
+if(!connected)return;
 
 scannerTarget=target;
 
-const returnUrl=new URL(window.location.href);
-returnUrl.search="";
-returnUrl.hash="";
-returnUrl.searchParams.set("barcode","{RESULT}");
+const url=new URL(window.location.href);
+url.search="";
+url.hash="";
+url.searchParams.set("barcode","{RESULT}");
 
-const ret=encodeURIComponent(returnUrl.toString());
-const deepLink="binaryeye://scan?ret="+ret;
-
-window.location.href=deepLink;
+const ret=encodeURIComponent(url.toString());
+window.location.href="binaryeye://scan?ret="+ret;
 }
 
-function handleScannerReturn(){
+function scannerReturn(){
 const params=new URLSearchParams(window.location.search);
-const barcode=params.get("barcode");
+const result=params.get("barcode");
 
-if(!barcode)return;
+if(!result)return;
 
-const clean=normalizeBarcode(barcode);
+const code=barcode(result);
 
-if(!clean)return;
+history.replaceState({},document.title,window.location.pathname);
 
-const target=scannerTarget;
-
-if(target==="product"){
+if(scannerTarget==="product"){
 $("productOverlay").classList.add("open");
-$("productBarcode").value=clean;
+$("productBarcode").value=code;
 $("productName").focus();
 }else{
 showPage("salePage");
-$("barcodeInput").value=clean;
+$("barcodeInput").value=code;
 searchSaleProduct();
 }
-
-history.replaceState({},document.title,window.location.pathname+window.location.hash);
 }
 
 document.addEventListener("click",event=>{
-const nav=event.target.closest("[data-page]");
-if(nav){
-showPage(nav.dataset.page);
+const page=event.target.closest("[data-page]");
+if(page){
+showPage(page.dataset.page);
 return;
 }
 
-const plus=event.target.closest("[data-stock-plus]");
+const plus=event.target.closest("[data-plus]");
 if(plus){
-changeStock(plus.dataset.stockPlus,1);
+changeStock(plus.dataset.plus,1);
 return;
 }
 
-const minus=event.target.closest("[data-stock-minus]");
+const minus=event.target.closest("[data-minus]");
 if(minus){
-changeStock(minus.dataset.stockMinus,-1);
+changeStock(minus.dataset.minus,-1);
 return;
 }
 
-const del=event.target.closest("[data-delete-product]");
+const del=event.target.closest("[data-delete]");
 if(del){
-deleteProduct(del.dataset.deleteProduct);
+deleteProduct(del.dataset.delete);
 return;
 }
 
-const remove=event.target.closest("[data-cart-index]");
+const remove=event.target.closest("[data-remove]");
 if(remove){
-removeCartItem(Number(remove.dataset.cartIndex));
+saleCart.splice(Number(remove.dataset.remove),1);
+renderCart();
 }
 });
 
 $("folderButton").addEventListener("click",connectDatabase);
-
 $("menuButton").addEventListener("click",openMenu);
 
-$("menuOverlay").addEventListener("click",event=>{
-if(event.target===$("menuOverlay"))$("menuOverlay").classList.remove("open");
+$("menuOverlay").addEventListener("click",e=>{
+if(e.target===$("menuOverlay"))$("menuOverlay").classList.remove("open");
 });
 
 $("addProductCard").addEventListener("click",openProductModal);
-
 $("productClose").addEventListener("click",closeProductModal);
 
-$("productOverlay").addEventListener("click",event=>{
-if(event.target===$("productOverlay"))closeProductModal();
+$("productOverlay").addEventListener("click",e=>{
+if(e.target===$("productOverlay"))closeProductModal();
 });
 
 $("productSubmit").addEventListener("click",registerProduct);
+$("productScanButton").addEventListener("click",()=>launchScanner("product"));
+$("scanButton").addEventListener("click",()=>launchScanner("sale"));
+$("saleAddButton").addEventListener("click",addToCart);
+$("checkoutButton").addEventListener("click",checkout);
+$("saveSettingsButton").addEventListener("click",saveSettings);
 
-$("productScanButton").addEventListener("click",()=>launchBinaryEye("product"));
-
-$("scanButton").addEventListener("click",()=>launchBinaryEye("sale"));
-
-$("barcodeInput").addEventListener("input",()=>{
-const value=normalizeBarcode($("barcodeInput").value);
-if(value!==$("barcodeInput").value)$("barcodeInput").value=value;
-});
-
-$("barcodeInput").addEventListener("keydown",event=>{
-if(event.key==="Enter"){
-event.preventDefault();
+$("barcodeInput").addEventListener("keydown",e=>{
+if(e.key==="Enter"){
+e.preventDefault();
 searchSaleProduct();
 }
 });
 
-$("saleAddButton").addEventListener("click",addToCart);
-
-$("checkoutButton").addEventListener("click",checkout);
-
-$("homeSaleButton").addEventListener("click",()=>showPage("salePage"));
-
-$("saveSettingsButton").addEventListener("click",saveSettings);
-
-window.addEventListener("pageshow",handleScannerReturn);
+window.addEventListener("pageshow",scannerReturn);
 
 window.addEventListener("DOMContentLoaded",async()=>{
-setConnectionStatus(false);
-handleScannerReturn();
-await restoreDatabaseConnection();
+setConnection(false);
+scannerReturn();
+await restoreConnection();
 });
