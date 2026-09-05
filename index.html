@@ -1,591 +1,1146 @@
-<!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<!DOCTYPE html><html lang="fa" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8"><meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+>
+
 <title>BizadShop</title>
 
 <style>
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
-
-:root {
-    --red: #ef4444;
-    --green: #19c37d;
-    --dark: #172033;
-    --bg: #f5f7fa;
-    --border: #e8ebf0;
-}
-
-html,
-body {
-    width: 100%;
-    height: 100%;
-}
-
-body {
-    font-family: Tahoma, Arial, sans-serif;
-    background: var(--bg);
-    color: var(--dark);
-}
-
-.app {
-    width: 100%;
-    max-width: 520px;
-    height: 100vh;
-    margin: auto;
-    position: relative;
-    overflow: hidden;
-    background: var(--bg);
-}
-
-
-/* =================================
-   کادر قرمز بالایی
-================================= */
-
-.top-header {
-    position: absolute;
-    top: 0;
-    right: 0;
-    left: 0;
-    height: 190px;
-
-    background:
-        linear-gradient(
-            to bottom,
-            #ef4444 0,
-            #ef4444 125px,
-            rgba(239, 68, 68, 0.95) 140px,
-            rgba(239, 68, 68, 0.65) 155px,
-            rgba(255,255,255,0) 190px
-        );
-
-    z-index: 20;
-}
-
-
-/* محتوای داخل قسمت قرمز */
-
-.header-content {
-    padding: 18px 18px 0;
-}
-
-
-/* =================================
-   ردیف بالا
-================================= */
-
-.header-row {
-    height: 46px;
-
-    display: grid;
-    grid-template-columns: 45px 1fr 45px;
-
-    align-items: center;
-}
-
-
-/* سه خط */
-
-.menu-button {
-    width: 42px;
-    height: 42px;
-
-    border: none;
-    background: transparent;
-
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-
-    gap: 5px;
-
-    cursor: pointer;
-}
-
-.menu-button span {
-    width: 23px;
-    height: 2px;
-
-    border-radius: 10px;
-
-    background: white;
-}
-
-
-/* نام فروشگاه */
-
-.shop-name {
-    text-align: center;
-
-    color: white;
-
-    font-size: 19px;
-    font-weight: bold;
-}
-
-
-/* چراغ اتصال */
-
-.status-light {
-    width: 14px;
-    height: 14px;
-
-    justify-self: end;
-
-    border-radius: 50%;
-
-    background: var(--green);
-
-    box-shadow:
-        0 0 0 5px rgba(255,255,255,.16),
-        0 0 14px rgba(25,195,125,.8);
-}
-
-
-/* =================================
-   اتصال به پوشه
-================================= */
-
-.folder-button {
-    display: block;
-
-    margin: 16px auto 0;
-
-    height: 40px;
-
-    padding: 0 20px;
-
-    border: 1px solid rgba(255,255,255,.5);
-    border-radius: 12px;
-
-    background: rgba(255,255,255,.16);
-
-    color: white;
-
-    font-family: inherit;
-    font-size: 12px;
-
-    cursor: pointer;
-
-    backdrop-filter: blur(5px);
-}
-
-
-/* =================================
-   محتوای صفحه
-================================= */
-
-.content {
-    position: absolute;
-
-    top: 145px;
-    right: 0;
-    left: 0;
-    bottom: 76px;
-
-    overflow-y: auto;
-
-    padding: 35px 18px 35px;
-
-    scrollbar-width: none;
-
-    z-index: 5;
-}
-
-.content::-webkit-scrollbar {
-    display: none;
-}
-
-
-/* =================================
-   جستجو
-================================= */
-
-.search-box {
-    width: 100%;
-    height: 58px;
-
-    background: white;
-
-    border: 1px solid var(--border);
-
-    border-radius: 16px;
-
-    display: flex;
-    align-items: center;
-
-    padding: 5px 7px 5px 16px;
-
-    box-shadow: 0 5px 18px rgba(20,33,61,.05);
-}
-
-.search-box input {
-    flex: 1;
-    min-width: 0;
-
-    border: none;
-    outline: none;
-
-    background: transparent;
-
-    font-family: inherit;
-    font-size: 13px;
-}
-
-.search-box input::placeholder {
-    color: #9aa3af;
-}
-
-
-/* دکمه اسکن */
-
-.scan-button {
-    width: 46px;
-    height: 46px;
-
-    border: none;
-
-    border-radius: 13px;
-
-    background: #e7faf3;
-
-    color: #19a974;
-
-    font-size: 21px;
-
-    cursor: pointer;
-}
-
-
-/* =================================
-   کارت کالا
-================================= */
-
-.product-card {
-    margin-top: 18px;
-
-    background: white;
-
-    border: 1px solid var(--border);
-
-    border-radius: 18px;
-
-    padding: 17px;
-
-    box-shadow: 0 5px 18px rgba(20,33,61,.05);
-}
-
-.product-name {
-    font-size: 15px;
-    font-weight: bold;
-}
-
-.product-barcode {
-    margin-top: 8px;
-
-    direction: ltr;
-    text-align: right;
-
-    font-family: Arial, sans-serif;
-
-    color: #929baa;
-
-    font-size: 11px;
-}
-
-.product-price {
-    margin-top: 9px;
-
-    color: #172033;
-
-    font-size: 14px;
-    font-weight: bold;
-}
-
-.product-actions {
-    display: flex;
-
-    align-items: center;
-
-    gap: 9px;
-
-    margin-top: 16px;
-}
-
-.add-button {
-    flex: 1;
-
-    height: 45px;
-
-    border: none;
-
-    border-radius: 13px;
-
-    background: #19b394;
-
-    color: white;
-
-    font-family: inherit;
-
-    font-size: 13px;
-    font-weight: bold;
-
-    cursor: pointer;
-}
-
-.quantity {
-    width: 65px;
-    height: 45px;
-
-    border: 1px solid #dfe4ea;
-
-    border-radius: 13px;
-
-    background: #fafbfc;
-
-    outline: none;
-
-    text-align: center;
-
-    font-family: inherit;
-
-    font-size: 14px;
-    font-weight: bold;
-}
-
-
-/* =================================
-   لیست
-================================= */
-
-.section-title {
-    margin-top: 27px;
-    margin-bottom: 12px;
-
-    font-size: 14px;
-    font-weight: bold;
-}
-
-.cart {
-    background: white;
-
-    border: 1px solid var(--border);
-
-    border-radius: 18px;
-
-    overflow: hidden;
-}
-
-.cart-item {
-    min-height: 66px;
-
-    padding: 13px 15px;
-
-    display: flex;
-
-    align-items: center;
-    justify-content: space-between;
-
-    border-bottom: 1px solid #edf0f3;
-}
-
-.cart-item:last-child {
-    border-bottom: none;
-}
-
-.cart-name {
-    font-size: 13px;
-    font-weight: bold;
-}
-
-.cart-price {
-    margin-top: 5px;
-
-    color: #929baa;
-
-    font-size: 10px;
-}
-
-.cart-count {
-    min-width: 36px;
-    height: 30px;
-
-    border-radius: 9px;
-
-    background: #e7faf3;
-
-    color: #19a974;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    font-size: 12px;
-    font-weight: bold;
-}
-
-
-/* =================================
-   منوی پایین
-================================= */
-
-.bottom-nav {
-    position: absolute;
-
-    right: 0;
-    left: 0;
-    bottom: 0;
-
-    height: 76px;
-
-    background: rgba(255,255,255,.98);
-
-    border-top: 1px solid #e8ebef;
-
-    display: grid;
-
-    grid-template-columns: repeat(3,1fr);
-
-    z-index: 30;
-}
-
-.nav-button {
-    border: none;
-
-    background: transparent;
-
-    color: #929baa;
-
-    font-family: inherit;
-
-    font-size: 11px;
-
-    cursor: pointer;
-}
-
-.nav-icon {
-    width: 35px;
-    height: 35px;
-
-    margin: 0 auto 4px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    border-radius: 11px;
-
-    font-size: 18px;
-}
-
-.nav-button.active {
-    color: #19a974;
-
-    font-weight: bold;
-}
-
-.nav-button.active .nav-icon {
-    background: #e7faf3;
-}
-
-
-/* =================================
-   صفحه‌های بزرگ
-================================= */
-
-@media (min-width: 700px) {
+    * {
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    html,
+    body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        min-height: 100%;
+    }
 
     body {
-        padding: 20px 0;
+        background: #f5f7f8;
+        color: #17233c;
+        font-family: Tahoma, Arial, sans-serif;
+    }
+
+    button,
+    input {
+        font-family: inherit;
+    }
+
+    button {
+        cursor: pointer;
     }
 
     .app {
-        height: calc(100vh - 40px);
+        width: 100%;
+        max-width: 520px;
+        min-height: 100vh;
+        margin: 0 auto;
+        position: relative;
+        background: #f5f7f8;
+    }
 
-        border-radius: 25px;
+    /* =========================
+       HEADER
+    ========================= */
+
+    .header {
+        position: fixed;
+        top: 0;
+        right: 0;
+        left: 0;
+
+        width: 100%;
+        max-width: 520px;
+        height: 154px;
+
+        margin: 0 auto;
+
+        z-index: 50;
+
+        padding: 13px 14px 20px;
+
+        background:
+            linear-gradient(
+                to bottom,
+                #d71920 0%,
+                #dd2e34 45%,
+                rgba(226, 65, 70, 0.68) 70%,
+                rgba(245, 247, 248, 0) 100%
+            );
+    }
+
+    .header-top {
+        height: 45px;
+
+        display: grid;
+        grid-template-columns: 45px 1fr 45px;
+
+        align-items: center;
+    }
+
+    .connection {
+        width: 10px;
+        height: 10px;
+
+        border-radius: 50%;
+
+        justify-self: start;
+
+        background: #dc2626;
+
+        box-shadow:
+            0 0 0 3px rgba(255, 255, 255, 0.18),
+            0 0 10px rgba(220, 38, 38, 0.65);
+
+        transition: 0.25s ease;
+    }
+
+    .connection.connected {
+        background: #22c55e;
+
+        box-shadow:
+            0 0 0 3px rgba(255, 255, 255, 0.18),
+            0 0 10px rgba(34, 197, 94, 0.75);
+    }
+
+    .shop-name {
+        color: #ffffff;
+        font-size: 17px;
+        font-weight: 700;
+        text-align: center;
+    }
+
+    .menu-button {
+        width: 40px;
+        height: 40px;
+
+        border: 0;
+        background: transparent;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        justify-self: end;
+
+        opacity: 0.35;
+        pointer-events: none;
+    }
+
+    .menu-icon {
+        width: 22px;
+
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .menu-icon span {
+        width: 22px;
+        height: 2px;
+
+        display: block;
+
+        border-radius: 5px;
+        background: #ffffff;
+    }
+
+    .folder-button {
+        display: block;
+
+        margin: 7px auto 0;
+
+        min-width: 150px;
+        height: 37px;
+
+        padding: 0 19px;
+
+        border: 1px solid rgba(255, 255, 255, 0.45);
+        border-radius: 12px;
+
+        background: rgba(255, 255, 255, 0.14);
+
+        color: #ffffff;
+
+        font-size: 12px;
+        font-weight: 700;
+
+        transition: 0.2s ease;
+    }
+
+    .folder-button:active {
+        transform: scale(0.97);
+    }
+
+    /* =========================
+       LOCK SCREEN
+    ========================= */
+
+    .lock-screen {
+        position: fixed;
+        top: 154px;
+        right: 0;
+        bottom: 0;
+        left: 0;
+
+        width: 100%;
+        max-width: 520px;
+
+        margin: 0 auto;
+
+        z-index: 40;
+
+        padding: 55px 25px 100px;
+
+        background: #f5f7f8;
+
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+
+        text-align: center;
+
+        transition: 0.3s ease;
+    }
+
+    .lock-screen.hidden {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+    }
+
+    .lock-box {
+        width: 100%;
+        max-width: 360px;
+
+        padding: 30px 24px;
+
+        background: #ffffff;
+
+        border-radius: 20px;
+
+        box-shadow:
+            0 8px 30px rgba(23, 35, 60, 0.08);
+    }
+
+    .lock-icon {
+        width: 58px;
+        height: 58px;
+
+        margin: 0 auto 18px;
+
+        border-radius: 50%;
+
+        background: rgba(215, 25, 32, 0.08);
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .lock-icon::before {
+        content: "";
+
+        width: 18px;
+        height: 15px;
+
+        border: 3px solid #d71920;
+        border-radius: 4px;
+
+        position: relative;
+    }
+
+    .lock-title {
+        margin: 0 0 9px;
+
+        color: #17233c;
+
+        font-size: 17px;
+        font-weight: 800;
+    }
+
+    .lock-text {
+        margin: 0 0 22px;
+
+        color: #718096;
+
+        font-size: 12px;
+        line-height: 2;
+    }
+
+    .connect-button {
+        width: 100%;
+        height: 48px;
+
+        border: 0;
+        border-radius: 13px;
+
+        background: #d71920;
+
+        color: #ffffff;
+
+        font-size: 13px;
+        font-weight: 700;
+
+        box-shadow: 0 7px 18px rgba(215, 25, 32, 0.18);
+    }
+
+    .connect-button:active {
+        transform: scale(0.98);
+    }
+
+    /* =========================
+       CONTENT
+    ========================= */
+
+    .content {
+        min-height: 100vh;
+
+        padding:
+            135px
+            13px
+            95px;
+    }
+
+    .page {
+        display: none;
+    }
+
+    .page.active {
+        display: block;
+    }
+
+    .page-title {
+        margin: 0 0 16px;
+
+        color: #17233c;
+
+        font-size: 20px;
+        font-weight: 800;
+    }
+
+    /* =========================
+       DASHBOARD
+    ========================= */
+
+    .stats-grid {
+        display: grid;
+
+        grid-template-columns: repeat(2, 1fr);
+
+        gap: 10px;
+
+        margin-bottom: 18px;
+    }
+
+    .stat-card {
+        min-height: 118px;
+
+        padding: 15px;
+
+        background: #ffffff;
+
+        border-radius: 17px;
+
+        box-shadow:
+            0 5px 18px rgba(23, 35, 60, 0.05);
+    }
+
+    .stat-label {
+        color: #7a8497;
+
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    .stat-value {
+        margin-top: 13px;
+
+        color: #17233c;
+
+        font-size: 20px;
+        font-weight: 900;
+    }
+
+    .stat-change {
+        margin-top: 9px;
+
+        font-size: 10px;
+        font-weight: 700;
+    }
+
+    .stat-change.up {
+        color: #16a34a;
+    }
+
+    .stat-change.down {
+        color: #dc2626;
+    }
+
+    .stat-change.warning {
+        color: #ea580c;
+    }
+
+    .stat-change.info {
+        color: #2563eb;
+    }
+
+    /* =========================
+       BARCODE
+    ========================= */
+
+    .barcode-row {
+        display: grid;
+
+        grid-template-columns: 1fr 48px;
+
+        gap: 8px;
+
+        margin-bottom: 12px;
+    }
+
+    .barcode-input {
+        width: 100%;
+        height: 48px;
+
+        padding: 0 15px;
+
+        border: 1px solid #e0e5eb;
+        border-radius: 13px;
+
+        background: #ffffff;
+
+        color: #17233c;
+
+        font-size: 13px;
+
+        outline: none;
+    }
+
+    .barcode-input:focus {
+        border-color: #d71920;
+
+        box-shadow:
+            0 0 0 3px rgba(215, 25, 32, 0.08);
+    }
+
+    .scan-button {
+        height: 48px;
+
+        border: 0;
+        border-radius: 13px;
+
+        background: #d71920;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .barcode-symbol {
+        width: 23px;
+        height: 23px;
+
+        position: relative;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        border-left: 2px solid #ffffff;
+        border-right: 2px solid #ffffff;
+    }
+
+    .barcode-symbol::before {
+        content: "";
+
+        width: 2px;
+        height: 19px;
+
+        background: #ffffff;
+
+        box-shadow:
+            4px 0 0 #ffffff,
+            8px 0 0 #ffffff,
+            14px 0 0 #ffffff;
+    }
+
+    /* =========================
+       PRODUCT CARD
+    ========================= */
+
+    .product-card {
+        padding: 18px;
+
+        margin-top: 8px;
+
+        background: #ffffff;
+
+        border-radius: 17px;
+
+        box-shadow:
+            0 5px 18px rgba(23, 35, 60, 0.05);
+    }
+
+    .product-name {
+        color: #17233c;
+
+        font-size: 16px;
+        font-weight: 800;
+    }
+
+    .product-info {
+        margin-top: 14px;
+
+        padding-top: 12px;
+
+        border-top: 1px solid #edf0f3;
+    }
+
+    .info-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+
+        margin-bottom: 8px;
+    }
+
+    .info-row:last-child {
+        margin-bottom: 0;
+    }
+
+    .info-label {
+        color: #8992a3;
+
+        font-size: 10px;
+    }
+
+    .info-value {
+        color: #17233c;
+
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .price-value {
+        color: #16a34a;
+
+        font-size: 15px;
+        font-weight: 900;
+    }
+
+    .product-action {
+        margin-top: 15px;
+
+        display: grid;
+
+        grid-template-columns: 1fr 65px;
+
+        gap: 8px;
+    }
+
+    .add-button {
+        height: 43px;
+
+        border: 0;
+        border-radius: 11px;
+
+        background: #16a34a;
+
+        color: #ffffff;
+
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .quantity {
+        width: 100%;
+        height: 43px;
+
+        border: 1px solid #e0e5eb;
+        border-radius: 11px;
+
+        background: #ffffff;
+
+        color: #17233c;
+
+        text-align: center;
+
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    /* =========================
+       SELECTED PRODUCTS
+    ========================= */
+
+    .section-title {
+        margin: 22px 3px 11px;
+
+        color: #17233c;
+
+        font-size: 14px;
+        font-weight: 800;
+    }
+
+    .selected-list {
+        background: #ffffff;
+
+        border-radius: 17px;
 
         overflow: hidden;
 
-        box-shadow: 0 15px 50px rgba(20,33,61,.10);
+        box-shadow:
+            0 5px 18px rgba(23, 35, 60, 0.05);
     }
-}
+
+    .selected-item {
+        min-height: 61px;
+
+        padding: 11px 15px;
+
+        display: grid;
+
+        grid-template-columns: 1fr auto auto;
+
+        align-items: center;
+
+        gap: 10px;
+
+        border-bottom: 1px solid #edf0f3;
+    }
+
+    .selected-item:last-child {
+        border-bottom: 0;
+    }
+
+    .selected-name {
+        color: #17233c;
+
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .selected-price {
+        color: #16a34a;
+
+        font-size: 11px;
+        font-weight: 800;
+    }
+
+    .selected-quantity {
+        color: #d71920;
+
+        font-size: 12px;
+        font-weight: 900;
+    }
+
+    /* =========================
+       INVENTORY
+    ========================= */
+
+    .inventory-card {
+        padding: 16px;
+
+        margin-bottom: 10px;
+
+        background: #ffffff;
+
+        border-radius: 16px;
+
+        box-shadow:
+            0 5px 18px rgba(23, 35, 60, 0.05);
+    }
+
+    .inventory-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+
+        gap: 10px;
+    }
+
+    .inventory-name {
+        color: #17233c;
+
+        font-size: 13px;
+        font-weight: 800;
+    }
+
+    .inventory-stock {
+        font-size: 13px;
+        font-weight: 900;
+    }
+
+    .stock-good {
+        color: #16a34a;
+    }
+
+    .stock-low {
+        color: #ea580c;
+    }
+
+    .stock-empty {
+        color: #dc2626;
+    }
+
+    .inventory-bar {
+        height: 6px;
+
+        margin-top: 12px;
+
+        border-radius: 10px;
+
+        background: #edf0f3;
+
+        overflow: hidden;
+    }
+
+    .inventory-progress {
+        height: 100%;
+
+        border-radius: 10px;
+
+        background: #16a34a;
+    }
+
+    .inventory-progress.low {
+        background: #ea580c;
+    }
+
+    .inventory-progress.empty {
+        background: #dc2626;
+    }
+
+    /* =========================
+       BOTTOM NAV
+    ========================= */
+
+    .bottom-nav {
+        position: fixed;
+
+        right: 0;
+        bottom: 0;
+        left: 0;
+
+        width: 100%;
+        max-width: 520px;
+        height: 78px;
+
+        margin: 0 auto;
+
+        z-index: 30;
+
+        display: grid;
+
+        grid-template-columns: repeat(3, 1fr);
+
+        padding: 12px 8px 7px;
+
+        background:
+            linear-gradient(
+                to bottom,
+                rgba(245, 247, 248, 0) 0%,
+                rgba(215, 25, 32, 0.20) 22%,
+                rgba(215, 25, 32, 0.75) 48%,
+                #d71920 72%,
+                #d71920 100%
+            );
+
+        transition: 0.3s ease;
+    }
+
+    .nav-item {
+        width: 100%;
+        height: 100%;
+
+        border: 0;
+        outline: 0;
+
+        background: transparent;
+
+        color: #ffffff;
+
+        display: flex;
+        flex-direction: column;
+
+        align-items: center;
+        justify-content: center;
+
+        gap: 4px;
+
+        padding: 0;
+
+        font-size: 11px;
+        font-weight: 700;
+
+        opacity: 0.72;
+    }
+
+    .nav-item.active {
+        opacity: 1;
+    }
+
+    .nav-icon {
+        width: 22px;
+        height: 22px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        position: relative;
+    }
+
+    .icon-home {
+        width: 16px;
+        height: 14px;
+
+        border: 2px solid #ffffff;
+        border-top: 0;
+
+        position: relative;
+        margin-top: 5px;
+    }
+
+    .icon-home::before {
+        content: "";
+
+        position: absolute;
+
+        width: 11px;
+        height: 11px;
+
+        border-top: 2px solid #ffffff;
+        border-right: 2px solid #ffffff;
+
+        transform: rotate(-45deg);
+
+        top: -6px;
+        right: 1px;
+    }
+
+    .icon-box {
+        width: 17px;
+        height: 15px;
+
+        border: 2px solid #ffffff;
+        border-radius: 2px;
+
+        position: relative;
+    }
+
+    .icon-box::before {
+        content: "";
+
+        position: absolute;
+
+        right: 2px;
+        left: 2px;
+        top: 3px;
+
+        border-top: 2px solid #ffffff;
+    }
+
+    .icon-sale {
+        width: 18px;
+        height: 13px;
+
+        border: 2px solid #ffffff;
+        border-radius: 3px;
+
+        position: relative;
+    }
+
+    .icon-sale::before {
+        content: "";
+
+        position: absolute;
+
+        width: 4px;
+        height: 4px;
+
+        border-radius: 50%;
+
+        background: #ffffff;
+
+        top: 2px;
+        right: 5px;
+    }
+
+    /* =========================
+       TOAST
+    ========================= */
+
+    .toast {
+        position: fixed;
+
+        right: 50%;
+
+        bottom: 88px;
+
+        transform: translateX(50%) translateY(15px);
+
+        width: calc(100% - 30px);
+        max-width: 480px;
+
+        padding: 12px 15px;
+
+        border-radius: 12px;
+
+        background: #17233c;
+
+        color: #ffffff;
+
+        text-align: center;
+
+        font-size: 11px;
+        line-height: 1.7;
+
+        opacity: 0;
+        visibility: hidden;
+
+        z-index: 100;
+
+        transition: 0.25s ease;
+    }
+
+    .toast.show {
+        opacity: 1;
+        visibility: visible;
+
+        transform:
+            translateX(50%)
+            translateY(0);
+    }
+
+    .toast.error {
+        background: #dc2626;
+    }
+
+    .toast.success {
+        background: #16a34a;
+    }
+
+    /* =========================
+       DISABLED CONTENT
+    ========================= */
+
+    .site-locked .bottom-nav {
+        opacity: 0.18;
+        pointer-events: none;
+    }
+
+    .site-locked .content {
+        pointer-events: none;
+        user-select: none;
+    }
 </style>
-</head>
+
+</head><body class="site-locked"><div class="app"><!-- HEADER -->
+
+<header class="header">
+
+    <div class="header-top">
+
+        <div
+            id="connectionLight"
+            class="connection"
+            aria-label="وضعیت اتصال"
+        ></div>
+
+        <div class="shop-name">
+            فروشگاه من
+        </div>
+
+        <button
+            id="menuButton"
+            class="menu-button"
+            type="button"
+            aria-label="منو"
+        >
+            <span class="menu-icon">
+                <span></span>
+                <span></span>
+                <span></span>
+            </span>
+        </button>
+
+    </div>
+
+    <button
+        id="folderButton"
+        class="folder-button"
+        type="button"
+    >
+        اتصال به دیتابیس
+    </button>
+
+</header>
 
 
-<body>
+<!-- LOCK SCREEN -->
 
-<div class="app">
+<section
+    id="lockScreen"
+    class="lock-screen"
+>
+
+    <div class="lock-box">
+
+        <div class="lock-icon"></div>
+
+        <h1 class="lock-title">
+            لطفاً به دیتابیس متصل شوید
+        </h1>
+
+        <p class="lock-text">
+            برای استفاده از فروشگاه ابتدا پوشه دیتابیس
+            را از حافظه گوشی انتخاب کنید.
+        </p>
+
+        <button
+            id="connectButton"
+            class="connect-button"
+            type="button"
+        >
+            اتصال به دیتابیس
+        </button>
+
+    </div>
+
+</section>
 
 
-    <!-- =========================
-         هدر ثابت
-    ========================== -->
+<!-- MAIN CONTENT -->
 
-    <header class="top-header">
+<main class="content">
 
-        <div class="header-content">
+    <!-- HOME -->
 
-            <div class="header-row">
+    <section
+        id="homePage"
+        class="page"
+    >
 
-                <!-- سه خط -->
-                <button class="menu-button">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </button>
+        <h1 class="page-title">
+            خانه
+        </h1>
 
+        <div class="stats-grid">
 
-                <!-- نام فروشگاه -->
-                <div class="shop-name">
-                    فروشگاه من
+            <div class="stat-card">
+
+                <div class="stat-label">
+                    فروش امروز
                 </div>
 
+                <div class="stat-value">
+                    ۲,۴۸۰,۰۰۰
+                </div>
 
-                <!-- چراغ وضعیت -->
-                <div class="status-light"></div>
+                <div class="stat-change up">
+                    ↑ ۱۲٪ نسبت به دیروز
+                </div>
 
             </div>
 
 
-            <!-- اتصال به پوشه -->
-            <button class="folder-button">
-                اتصال به پوشه
-            </button>
+            <div class="stat-card">
+
+                <div class="stat-label">
+                    تعداد فروش
+                </div>
+
+                <div class="stat-value">
+                    ۳۸
+                </div>
+
+                <div class="stat-change up">
+                    ↑ ۸ فروش بیشتر
+                </div>
+
+            </div>
+
+
+            <div class="stat-card">
+
+                <div class="stat-label">
+                    موجودی کالا
+                </div>
+
+                <div class="stat-value">
+                    ۱,۲۴۸
+                </div>
+
+                <div class="stat-change down">
+                    ↓ ۲۳ کالا
+                </div>
+
+            </div>
+
+
+            <div class="stat-card">
+
+                <div class="stat-label">
+                    کالاهای کم‌موجود
+                </div>
+
+                <div class="stat-value">
+                    ۷
+                </div>
+
+                <div class="stat-change warning">
+                    ⚠ نیاز به بررسی
+                </div>
+
+            </div>
 
         </div>
 
-    </header>
+    </section>
 
 
+    <!-- SALE -->
 
-    <!-- =========================
-         محتوای فروش
-    ========================== -->
+    <section
+        id="salePage"
+        class="page active"
+    >
 
-    <main class="content">
+        <h1 class="page-title">
+            فروش
+        </h1>
 
-        <div class="search-box">
+        <div class="barcode-row">
 
             <input
+                id="barcodeInput"
+                class="barcode-input"
                 type="text"
-                placeholder="نام کالا یا بارکد..."
+                inputmode="numeric"
+                autocomplete="off"
+                placeholder="بارکد کالا..."
+                aria-label="بارکد کالا"
             >
 
-            <button class="scan-button">
-                ▣
+            <button
+                id="scanButton"
+                class="scan-button"
+                type="button"
+                aria-label="اسکن بارکد"
+            >
+                <span class="barcode-symbol"></span>
             </button>
 
         </div>
 
-
-        <!-- نمونه کالا -->
 
         <div class="product-card">
 
@@ -593,18 +1148,41 @@ body {
                 نوشابه کوکاکولا
             </div>
 
-            <div class="product-barcode">
-                6261234567890
+            <div class="product-info">
+
+                <div class="info-row">
+
+                    <span class="info-label">
+                        بارکد
+                    </span>
+
+                    <span class="info-value">
+                        6261234567890
+                    </span>
+
+                </div>
+
+                <div class="info-row">
+
+                    <span class="info-label">
+                        قیمت
+                    </span>
+
+                    <span class="price-value">
+                        ۳۵,۰۰۰ تومان
+                    </span>
+
+                </div>
+
             </div>
 
-            <div class="product-price">
-                35,000 تومان
-            </div>
+            <div class="product-action">
 
-
-            <div class="product-actions">
-
-                <button class="add-button">
+                <button
+                    id="addButton"
+                    class="add-button"
+                    type="button"
+                >
                     اضافه کردن
                 </button>
 
@@ -613,6 +1191,7 @@ body {
                     type="number"
                     min="1"
                     value="1"
+                    aria-label="تعداد"
                 >
 
             </div>
@@ -620,106 +1199,220 @@ body {
         </div>
 
 
-        <div class="section-title">
+        <h2 class="section-title">
             کالاهای انتخاب‌شده
-        </div>
+        </h2>
 
+        <div class="selected-list">
 
-        <div class="cart">
+            <div class="selected-item">
 
-            <div class="cart-item">
-
-                <div>
-                    <div class="cart-name">
-                        نوشابه کوکاکولا
-                    </div>
-
-                    <div class="cart-price">
-                        35,000 تومان
-                    </div>
+                <div class="selected-name">
+                    نوشابه کوکاکولا
                 </div>
 
-                <div class="cart-count">
-                    × 2
+                <div class="selected-price">
+                    ۳۵,۰۰۰ تومان
+                </div>
+
+                <div class="selected-quantity">
+                    × ۲
                 </div>
 
             </div>
 
+            <div class="selected-item">
 
-            <div class="cart-item">
-
-                <div>
-                    <div class="cart-name">
-                        چیپس مزمز
-                    </div>
-
-                    <div class="cart-price">
-                        28,000 تومان
-                    </div>
+                <div class="selected-name">
+                    چیپس مزمز
                 </div>
 
-                <div class="cart-count">
-                    × 1
+                <div class="selected-price">
+                    ۲۸,۰۰۰ تومان
+                </div>
+
+                <div class="selected-quantity">
+                    × ۱
                 </div>
 
             </div>
 
+            <div class="selected-item">
 
-            <div class="cart-item">
-
-                <div>
-                    <div class="cart-name">
-                        آب معدنی
-                    </div>
-
-                    <div class="cart-price">
-                        12,000 تومان
-                    </div>
+                <div class="selected-name">
+                    آب معدنی
                 </div>
 
-                <div class="cart-count">
-                    × 3
+                <div class="selected-price">
+                    ۱۲,۰۰۰ تومان
+                </div>
+
+                <div class="selected-quantity">
+                    × ۳
                 </div>
 
             </div>
 
         </div>
 
-
-        <!-- فقط برای ایجاد اسکرول نمونه -->
-
-        <div style="height:250px;"></div>
-
-    </main>
+    </section>
 
 
+    <!-- INVENTORY -->
 
-    <!-- =========================
-         منوی پایین ثابت
-    ========================== -->
+    <section
+        id="inventoryPage"
+        class="page"
+    >
 
-    <nav class="bottom-nav">
-
-        <button class="nav-button">
-            <div class="nav-icon">▣</div>
+        <h1 class="page-title">
             انبار
-        </button>
+        </h1>
+
+        <div class="inventory-card">
+
+            <div class="inventory-top">
+
+                <div class="inventory-name">
+                    نوشابه کوکاکولا
+                </div>
+
+                <div class="inventory-stock stock-good">
+                    ۲۵ عدد
+                </div>
+
+            </div>
+
+            <div class="inventory-bar">
+                <div
+                    class="inventory-progress"
+                    style="width: 75%"
+                ></div>
+            </div>
+
+        </div>
 
 
-        <button class="nav-button">
-            <div class="nav-icon">⌂</div>
+        <div class="inventory-card">
+
+            <div class="inventory-top">
+
+                <div class="inventory-name">
+                    چیپس مزمز
+                </div>
+
+                <div class="inventory-stock stock-low">
+                    ۵ عدد
+                </div>
+
+            </div>
+
+            <div class="inventory-bar">
+
+                <div
+                    class="inventory-progress low"
+                    style="width: 22%"
+                ></div>
+
+            </div>
+
+        </div>
+
+
+        <div class="inventory-card">
+
+            <div class="inventory-top">
+
+                <div class="inventory-name">
+                    آب معدنی
+                </div>
+
+                <div class="inventory-stock stock-empty">
+                    ۰ عدد
+                </div>
+
+            </div>
+
+            <div class="inventory-bar">
+
+                <div
+                    class="inventory-progress empty"
+                    style="width: 3%"
+                ></div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+</main>
+
+
+<!-- BOTTOM NAV -->
+
+<nav
+    id="bottomNav"
+    class="bottom-nav"
+>
+
+    <button
+        class="nav-item"
+        data-page="inventoryPage"
+        type="button"
+    >
+
+        <span class="nav-icon">
+            <span class="icon-box"></span>
+        </span>
+
+        <span>
+            انبار
+        </span>
+
+    </button>
+
+
+    <button
+        class="nav-item"
+        data-page="homePage"
+        type="button"
+    >
+
+        <span class="nav-icon">
+            <span class="icon-home"></span>
+        </span>
+
+        <span>
             خانه
-        </button>
+        </span>
+
+    </button>
 
 
-        <button class="nav-button active">
-            <div class="nav-icon">▤</div>
+    <button
+        class="nav-item active"
+        data-page="salePage"
+        type="button"
+    >
+
+        <span class="nav-icon">
+            <span class="icon-sale"></span>
+        </span>
+
+        <span>
             فروش
-        </button>
+        </span>
 
-    </nav>
+    </button>
 
-</div>
+</nav>
 
-</body>
-</html>
+
+<div
+    id="toast"
+    class="toast"
+></div>
+
+</div><script src="main.js"></script></body>
+        </html>
