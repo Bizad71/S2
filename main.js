@@ -3,704 +3,779 @@ const DB_VERSION=1;
 const HANDLE_STORE="handles";
 const HANDLE_KEY="database-folder";
 
-let databaseDirectory=null;
+let dbHandle=null;
 let connected=false;
-let scannerTarget="sale";
+let shop={name:"فروشگاه من",phone:"",address:""};
 let products=[];
 let inventory=[];
 let invoices=[];
-let saleCart=[];
-let productsByBarcode=new Map();
-let productsById=new Map();
-let inventoryByProductId=new Map();
-let shopInfo={};
-let shopSettings={};
+let saleItems=[];
+let productMap=new Map();
+let barcodeMap=new Map();
+let cart=[];
+let currentPage="home";
+let scannerTarget="sale";
 let toastTimer=null;
-let saveTimer=null;
 
 const $=id=>document.getElementById(id);
 
-function money(value){
-return new Intl.NumberFormat("fa-IR").format(Number(value)||0)+" تومان";
+function money(v){
+  return new Intl.NumberFormat("fa-IR").format(Number(v)||0);
 }
 
-function fa(value){
-return new Intl.NumberFormat("fa-IR").format(Number(value)||0);
+function esc(v){
+  return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
 }
 
-function normalizeDigits(value=""){
-return String(value).replace(/[۰-۹]/g,d=>"۰۱۲۳۴۵۶۷۸۹".indexOf(d)).replace(/[٠-٩]/g,d=>"٠١٢٣٤٥٦٧٨٩".indexOf(d));
-}
-
-function barcode(value=""){
-return normalizeDigits(value).trim();
-}
-
-function escapeHTML(value=""){
-return String(value).replace(/&/g,"&").replace(/</g,"<").replace(/>/g,">").replace(/"/g,""").replace(/'/g,"'");
-}
-
-function toast(message){
-clearTimeout(toastTimer);
-$("toast").textContent=message;
-$("toast").classList.add("show");
-toastTimer=setTimeout(()=>$("toast").classList.remove("show"),2200);
-}
-
-function setConnection(state){
-connected=state;
-$("connectionLight").classList.toggle("connected",state);
-$("folderButton").classList.toggle("connected",state);
-$("folderButton").textContent=state?"دیتابیس متصل است":"اتصال به دیتابیس";
-$("lockScreen").classList.toggle("hidden",state);
+function toast(text){
+  clearTimeout(toastTimer);
+  $("toast").textContent=text;
+  $("toast").classList.add("show");
+  toastTimer=setTimeout(()=>$("toast").classList.remove("show"),2200);
 }
 
 function openIDB(){
-return new Promise((resolve,reject)=>{
-const request=indexedDB.open(DB_NAME,DB_VERSION);
-request.onupgradeneeded=()=>{
-if(!request.result.objectStoreNames.contains(HANDLE_STORE)){
-request.result.createObjectStore(HANDLE_STORE);
-}
-};
-request.onsuccess=()=>resolve(request.result);
-request.onerror=()=>reject(request.error);
-});
+  return new Promise((resolve,reject)=>{
+    const r=indexedDB.open(DB_NAME,DB_VERSION);
+    r.onupgradeneeded=()=>{
+      if(!r.result.objectStoreNames.contains(HANDLE_STORE))r.result.createObjectStore(HANDLE_STORE);
+    };
+    r.onsuccess=()=>resolve(r.result);
+    r.onerror=()=>reject(r.error);
+  });
 }
 
 async function saveHandle(handle){
-const db=await openIDB();
-return new Promise((resolve,reject)=>{
-const tx=db.transaction(HANDLE_STORE,"readwrite");
-tx.objectStore(HANDLE_STORE).put(handle,HANDLE_KEY);
-tx.oncomplete=()=>{db.close();resolve()};
-tx.onerror=()=>{db.close();reject(tx.error)};
-});
+  const db=await openIDB();
+  await new Promise((resolve,reject)=>{
+    const tx=db.transaction(HANDLE_STORE,"readwrite");
+    tx.objectStore(HANDLE_STORE).put(handle,HANDLE_KEY);
+    tx.oncomplete=resolve;
+    tx.onerror=()=>reject(tx.error);
+  });
 }
 
 async function getHandle(){
-const db=await openIDB();
-return new Promise((resolve,reject)=>{
-const tx=db.transaction(HANDLE_STORE,"readonly");
-const req=tx.objectStore(HANDLE_STORE).get(HANDLE_KEY);
-req.onsuccess=()=>{db.close();resolve(req.result||null)};
-req.onerror=()=>{db.close();reject(req.error)};
-});
+  const db=await openIDB();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(HANDLE_STORE,"readonly");
+    const r=tx.objectStore(HANDLE_STORE).get(HANDLE_KEY);
+    r.onsuccess=()=>resolve(r.result||null);
+    r.onerror=()=>reject(r.error);
+  });
 }
 
-async function permission(handle,request=false){
-try{
-const mode={mode:"readwrite"};
-const result=request?await handle.requestPermission(mode):await handle.queryPermission(mode);
-return result==="granted";
-}catch{
-return false;
-}
-}
-
-async function dir(parent,name){
-return parent.getDirectoryHandle(name,{create:true});
+async function verifyPermission(handle,request=false){
+  if(!handle)return false;
+  const opts={mode:"readwrite"};
+  let p=await handle.queryPermission(opts);
+  if(p==="granted")return true;
+  if(request){
+    p=await handle.requestPermission(opts);
+    return p==="granted";
+  }
+  return false;
 }
 
-async function file(parent,name){
-return parent.getFileHandle(name,{create:true});
+async function fileExists(dir,name){
+  try{
+    await dir.getFileHandle(name);
+    return true;
+  }catch{
+    return false;
+  }
 }
 
-async function readJSON(parent,name,fallback){
-try{
-const f=await parent.getFileHandle(name,{create:false});
-const text=await(await f.getFile()).text();
-return text.trim()?JSON.parse(text):fallback;
-}catch{
-return fallback;
-}
+async function ensureJSONFile(dir,name,data){
+  if(await fileExists(dir,name))return;
+  const h=await dir.getFileHandle(name,{create:true});
+  const w=await h.createWritable();
+  await w.write(JSON.stringify(data,null,2));
+  await w.close();
 }
 
-async function writeJSON(parent,name,data){
-const f=await file(parent,name);
-const w=await f.createWritable();
-await w.write(JSON.stringify(data,null,2));
-await w.close();
+async function writeJSON(path,data){
+  let dir=dbHandle;
+  for(const part of path.split("/").slice(0,-1))dir=await dir.getDirectoryHandle(part);
+  const file=await dir.getFileHandle(path.split("/").pop(),{create:true});
+  const w=await file.createWritable();
+  await w.write(JSON.stringify(data,null,2));
+  await w.close();
 }
 
-async function ensureJSON(parent,name,data){
-try{
-await parent.getFileHandle(name,{create:false});
-}catch{
-await writeJSON(parent,name,data);
-}
-}
-
-async function createStructure(){
-const system=await dir(databaseDirectory,"system");
-const shop=await dir(databaseDirectory,"shop");
-const users=await dir(databaseDirectory,"users");
-const productsDir=await dir(databaseDirectory,"products");
-const inventoryDir=await dir(databaseDirectory,"inventory");
-const sales=await dir(databaseDirectory,"sales");
-await dir(databaseDirectory,"backups");
-
-await ensureJSON(system,"database.json",{
-id:crypto.randomUUID(),
-created_at:new Date().toISOString(),
-last_update:new Date().toISOString()
-});
-
-await ensureJSON(system,"version.json",{version:"1.0.0"});
-await ensureJSON(shop,"info.json",{name:"فروشگاه من",phone:"",address:"",created_at:new Date().toISOString()});
-await ensureJSON(shop,"settings.json",{currency:"تومان",invoice_prefix:"INV",next_invoice_number:1});
-await ensureJSON(users,"users.json",[]);
-await ensureJSON(productsDir,"products.json",[]);
-await ensureJSON(inventoryDir,"inventory.json",[]);
-await ensureJSON(sales,"invoices.json",[]);
-await ensureJSON(sales,"items.json",[]);
+async function readJSON(path,fallback){
+  try{
+    let dir=dbHandle;
+    for(const part of path.split("/").slice(0,-1))dir=await dir.getDirectoryHandle(part);
+    const file=await dir.getFileHandle(path.split("/").pop());
+    const f=await file.getFile();
+    const text=await f.text();
+    return text.trim()?JSON.parse(text):fallback;
+  }catch{
+    return fallback;
+  }
 }
 
-async function loadCache(){
-const shop=await dir(databaseDirectory,"shop");
-const productsDir=await dir(databaseDirectory,"products");
-const inventoryDir=await dir(databaseDirectory,"inventory");
-const sales=await dir(databaseDirectory,"sales");
+async function ensureStructure(){
+  const dirs=[
+    "system","shop","users","products","inventory","sales","backups"
+  ];
+  for(const name of dirs)await dbHandle.getDirectoryHandle(name,{create:true});
 
-const [info,settings,p,invs,inv]=await Promise.all([
-readJSON(shop,"info.json",{}),
-readJSON(shop,"settings.json",{}),
-readJSON(productsDir,"products.json",[]),
-readJSON(inventoryDir,"inventory.json",[]),
-readJSON(sales,"invoices.json",[])
-]);
+  await ensureJSONFile(await dbHandle.getDirectoryHandle("system"),"database.json",{
+    id:crypto.randomUUID(),
+    name:"BizadShop",
+    created_at:new Date().toISOString(),
+    last_update:new Date().toISOString()
+  });
 
-shopInfo=info||{};
-shopSettings=settings||{};
-products=Array.isArray(p)?p:[];
-inventory=Array.isArray(invs)?invs:[];
-invoices=Array.isArray(inv)?inv:[];
+  await ensureJSONFile(await dbHandle.getDirectoryHandle("system"),"version.json",{
+    version:"1.0.0"
+  });
 
-productsByBarcode=new Map();
-productsById=new Map();
-inventoryByProductId=new Map();
+  await ensureJSONFile(await dbHandle.getDirectoryHandle("shop"),"info.json",shop);
+  await ensureJSONFile(await dbHandle.getDirectoryHandle("shop"),"settings.json",{
+    currency:"تومان",
+    invoice_prefix:"INV",
+    next_invoice_number:1
+  });
 
-for(const p of products){
-productsByBarcode.set(barcode(p.barcode),p);
-productsById.set(p.id,p);
+  await ensureJSONFile(await dbHandle.getDirectoryHandle("users"),"users.json",[]);
+  await ensureJSONFile(await dbHandle.getDirectoryHandle("products"),"products.json",[]);
+  await ensureJSONFile(await dbHandle.getDirectoryHandle("inventory"),"inventory.json",[]);
+  await ensureJSONFile(await dbHandle.getDirectoryHandle("sales"),"invoices.json",[]);
+  await ensureJSONFile(await dbHandle.getDirectoryHandle("sales"),"items.json",[]);
 }
 
-for(const i of inventory){
-inventoryByProductId.set(i.product_id,Number(i.stock)||0);
+async function loadData(){
+  shop=await readJSON("shop/info.json",shop);
+  products=await readJSON("products/products.json",[]);
+  inventory=await readJSON("inventory/inventory.json",[]);
+  invoices=await readJSON("sales/invoices.json",[]);
+  saleItems=await readJSON("sales/items.json",[]);
+
+  if(!Array.isArray(products))products=[];
+  if(!Array.isArray(inventory))inventory=[];
+  if(!Array.isArray(invoices))invoices=[];
+  if(!Array.isArray(saleItems))saleItems=[];
+
+  productMap=new Map(products.map(p=>[p.id,p]));
+  barcodeMap=new Map(products.map(p=>[String(p.barcode),p]));
 }
 
-$("shopName").textContent=shopInfo.name||"فروشگاه من";
-$("settingsShopName").value=shopInfo.name||"فروشگاه من";
-$("settingsCurrency").value=shopSettings.currency||"تومان";
+async function connectDatabase(request=true){
+  try{
+    if(!("showDirectoryPicker" in window)){
+      toast("این مرورگر از اتصال پوشه پشتیبانی نمی‌کند");
+      return false;
+    }
 
-refreshHome();
-renderInventory();
+    if(!dbHandle)dbHandle=await getHandle();
+
+    let permission=dbHandle?await verifyPermission(dbHandle,request):false;
+
+    if(!permission){
+      dbHandle=await window.showDirectoryPicker({mode:"readwrite"});
+      permission=await verifyPermission(dbHandle,true);
+      if(!permission)return false;
+      await saveHandle(dbHandle);
+    }
+
+    await ensureStructure();
+    await loadData();
+
+    connected=true;
+    updateConnection();
+    $("shopName").textContent=shop.name||"فروشگاه من";
+    $("loginView").classList.add("hidden");
+    $("appView").classList.remove("hidden");
+    showPage(currentPage);
+    return true;
+  }catch(e){
+    console.error(e);
+    connected=false;
+    updateConnection();
+    toast("اتصال به دیتابیس انجام نشد");
+    return false;
+  }
 }
 
-async function connectDatabase(){
-if(!window.showDirectoryPicker){
-toast("مرورگر شما از اتصال پوشه پشتیبانی نمی‌کند.");
-return;
+function updateConnection(){
+  $("connectionLight").classList.toggle("ok",connected);
 }
 
-try{
-const handle=await window.showDirectoryPicker({mode:"readwrite"});
-if(!await permission(handle,true)){
-toast("دسترسی به پوشه داده نشد.");
-return;
+function inventoryStock(productId){
+  const x=inventory.find(i=>i.product_id===productId);
+  return x?Number(x.stock)||0:0;
 }
 
-databaseDirectory=handle;
-await createStructure();
-await saveHandle(handle);
-await loadCache();
-setConnection(true);
-showPage("homePage");
-toast("دیتابیس متصل شد.");
-}catch(error){
-if(error?.name!=="AbortError")toast("اتصال انجام نشد.");
-}
+async function saveInventory(){
+  await writeJSON("inventory/inventory.json",inventory);
 }
 
-async function restoreConnection(){
-try{
-const handle=await getHandle();
-if(!handle)return;
-if(!await permission(handle,false))return;
-
-databaseDirectory=handle;
-await createStructure();
-await loadCache();
-setConnection(true);
-}catch{}
+async function saveProducts(){
+  await writeJSON("products/products.json",products);
 }
 
-function showPage(id){
-if(!connected){
-toast("ابتدا دیتابیس را متصل کنید.");
-return;
+function todayKey(){
+  const d=new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 }
 
-document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id===id));
-document.querySelectorAll(".nav-btn").forEach(b=>b.classList.toggle("active",b.dataset.page===id));
-$("menuOverlay").classList.remove("open");
+function todaySales(){
+  const today=todayKey();
+  return invoices.filter(i=>String(i.created_at||"").slice(0,10)===today)
+    .reduce((s,i)=>s+(Number(i.total)||0),0);
 }
 
-function openMenu(){
-if(!connected){
-toast("ابتدا دیتابیس را متصل کنید.");
-return;
+function showPage(page){
+  if(!connected)return;
+  currentPage=page;
+  $("menu").classList.remove("show");
+  document.querySelectorAll(".nav-btn").forEach(b=>b.classList.toggle("active",b.dataset.page===page));
+
+  if(page==="home")showHome();
+  else if(page==="sale")showSale();
+  else if(page==="inventory")showInventory();
+  else if(page==="settings")showSettings();
+  else if(page==="contact")showContact();
 }
-$("menuOverlay").classList.add("open");
+
+function showHome(){
+  const low=products.filter(p=>inventoryStock(p.id)<=5);
+  $("main").innerHTML=`
+    <div class="page-title">مدیریت فروشگاه</div>
+    <div class="card">
+      <div class="stat-title">فروش امروز</div>
+      <div class="stat-value">${money(todaySales())}</div>
+    </div>
+    <button id="addProductCard" class="card add-card">
+      <div class="add-plus">+</div>
+      <div class="add-text">ثبت کالا جدید</div>
+    </button>
+    <div class="section-title low-title">کالاهای رو به اتمام</div>
+    <div class="card">
+      ${low.length?low.map(p=>`
+        <div class="low-item">
+          <div>
+            <div class="item-name">${esc(p.name)}</div>
+            <div class="item-sub">${esc(p.barcode)}</div>
+          </div>
+          <div class="badge">${money(inventoryStock(p.id))}</div>
+        </div>
+      `).join(""):`<div class="empty">کالای رو به اتمامی وجود ندارد</div>`}
+    </div>
+  `;
+  $("addProductCard").onclick=openProductModal;
 }
 
 function openProductModal(){
-if(!connected)return;
-$("productOverlay").classList.add("open");
-setTimeout(()=>$("productBarcode").focus(),50);
-}
-
-function closeProductModal(){
-$("productOverlay").classList.remove("open");
-}
-
-function resetProductForm(){
-$("productBarcode").value="";
-$("productName").value="";
-$("productPurchasePrice").value="";
-$("productSalePrice").value="";
-$("productQuantity").value="0";
-$("productCategory").value="نوشیدنی";
-$("productUnit").value="عدد";
-}
-
-async function saveProductsAndInventory(){
-const productsDir=await dir(databaseDirectory,"products");
-const inventoryDir=await dir(databaseDirectory,"inventory");
-
-await Promise.all([
-writeJSON(productsDir,"products.json",products),
-writeJSON(inventoryDir,"inventory.json",inventory)
-]);
+  scannerTarget="product";
+  $("modalTitle").textContent="ثبت کالا جدید";
+  $("modalBody").innerHTML=`
+    <div class="field">
+      <label>بارکد</label>
+      <div class="scan-row">
+        <input id="productBarcode" inputmode="numeric">
+        <button class="scan-btn" id="productScan">⌁</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>نام کالا</label>
+      <input id="productName">
+    </div>
+    <div class="field">
+      <label>دسته بندی</label>
+      <select id="productCategory">
+        <option value="نوشیدنی">نوشیدنی</option>
+        <option value="خواربار">خواربار</option>
+        <option value="یخچالی">یخچالی</option>
+        <option value="تنقلات">تنقلات</option>
+        <option value="شوینده">شوینده</option>
+        <option value="بهداشتی">بهداشتی</option>
+        <option value="لوازم مصرفی">لوازم مصرفی</option>
+        <option value="سایر">سایر</option>
+      </select>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>قیمت خرید</label>
+        <input id="purchasePrice" inputmode="decimal">
+      </div>
+      <div class="field">
+        <label>قیمت فروش</label>
+        <input id="salePrice" inputmode="decimal">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>واحد</label>
+        <input id="productUnit" value="عدد">
+      </div>
+      <div class="field">
+        <label>تعداد</label>
+        <input id="productStock" value="0" inputmode="numeric">
+      </div>
+    </div>
+    <button class="primary" id="saveProduct">ثبت</button>
+  `;
+  $("modalOverlay").classList.add("show");
+  $("productBarcode").focus();
+  $("productScan").onclick=()=>launchScanner("product");
+  $("saveProduct").onclick=registerProduct;
 }
 
 async function registerProduct(){
-const code=barcode($("productBarcode").value);
-const name=$("productName").value.trim();
-const purchase=Number(normalizeDigits($("productPurchasePrice").value))||0;
-const sale=Number(normalizeDigits($("productSalePrice").value))||0;
-const quantity=Math.max(0,Number(normalizeDigits($("productQuantity").value))||0);
-const category=$("productCategory").value;
-const unit=$("productUnit").value;
+  const barcode=$("productBarcode").value.trim();
+  const name=$("productName").value.trim();
+  const category=$("productCategory").value;
+  const purchase=Number($("purchasePrice").value)||0;
+  const sale=Number($("salePrice").value)||0;
+  const unit=$("productUnit").value.trim()||"عدد";
+  const stock=Math.max(0,Number($("productStock").value)||0);
 
-if(!code)return toast("بارکد را وارد کنید.");
-if(!name)return toast("نام کالا را وارد کنید.");
-if(productsByBarcode.has(code))return toast("این بارکد قبلاً ثبت شده است.");
+  if(!barcode)return toast("بارکد را وارد کنید");
+  if(!name)return toast("نام کالا را وارد کنید");
+  if(barcodeMap.has(barcode))return toast("این بارکد قبلاً ثبت شده است");
 
-const product={
-id:crypto.randomUUID(),
-barcode:code,
-name,
-category,
-purchase_price:purchase,
-sale_price:sale,
-unit,
-created_at:new Date().toISOString()
-};
+  const product={
+    id:crypto.randomUUID(),
+    barcode,
+    name,
+    category,
+    purchase_price:purchase,
+    sale_price:sale,
+    unit,
+    created_at:new Date().toISOString()
+  };
 
-products.push(product);
-inventory.push({product_id:product.id,stock:quantity});
-productsByBarcode.set(code,product);
-productsById.set(product.id,product);
-inventoryByProductId.set(product.id,quantity);
-
-await saveProductsAndInventory();
-
-resetProductForm();
-closeProductModal();
-refreshHome();
-renderInventory();
-toast("کالا ثبت شد.");
+  products.push(product);
+  productMap.set(product.id,product);
+  barcodeMap.set(barcode,product);
+  inventory.push({product_id:product.id,stock});
+  
+  try{
+    await saveProducts();
+    await saveInventory();
+    closeModal();
+    showHome();
+    toast("کالا با موفقیت ثبت شد");
+  }catch(e){
+    products=products.filter(p=>p.id!==product.id);
+    inventory=inventory.filter(i=>i.product_id!==product.id);
+    productMap.delete(product.id);
+    barcodeMap.delete(barcode);
+    toast("ذخیره کالا انجام نشد");
+  }
 }
 
-function findProduct(code){
-return productsByBarcode.get(barcode(code))||null;
+function showSale(){
+  $("main").innerHTML=`
+    <div class="page-title">فروش</div>
+    <div class="card">
+      <div class="field">
+        <label>بارکد کالا</label>
+        <div class="scan-row">
+          <input id="saleBarcode" inputmode="numeric" autocomplete="off">
+          <button class="scan-btn" id="saleScan">⌁</button>
+        </div>
+      </div>
+      <div id="saleProduct"></div>
+    </div>
+    <div class="section-title">سبد فروش</div>
+    <div class="card" id="cartBox"></div>
+  `;
+
+  $("saleScan").onclick=()=>launchScanner("sale");
+  $("saleBarcode").oninput=()=>lookupSale($("saleBarcode").value.trim());
+  $("saleBarcode").onkeydown=e=>{
+    if(e.key==="Enter")lookupSale($("saleBarcode").value.trim());
+  };
+  renderCart();
 }
 
-function searchSaleProduct(){
-const code=barcode($("barcodeInput").value);
-if(!code){
-$("saleProductCard").classList.add("hidden");
-return;
+function lookupSale(code){
+  if(!code){
+    $("saleProduct").innerHTML="";
+    return;
+  }
+  const p=barcodeMap.get(code);
+  if(!p){
+    $("saleProduct").innerHTML=`<div class="empty">کالا پیدا نشد</div>`;
+    return;
+  }
+
+  const stock=inventoryStock(p.id);
+  $("saleProduct").innerHTML=`
+    <div class="product-card">
+      <div class="product-head">
+        <div>
+          <div class="item-name">${esc(p.name)}</div>
+          <div class="item-sub">${esc(p.barcode)}</div>
+        </div>
+        <div class="price">${money(p.sale_price)}</div>
+      </div>
+      <div class="stock">موجودی: ${money(stock)} ${esc(p.unit)}</div>
+      <div class="qty-row">
+        <button class="qty-btn" id="saleMinus">−</button>
+        <input id="saleQty" value="1" inputmode="numeric">
+        <button class="qty-btn" id="salePlus">+</button>
+      </div>
+      <div style="height:9px"></div>
+      <button class="primary" id="addToCart">افزودن به سبد</button>
+    </div>
+  `;
+
+  $("saleMinus").onclick=()=>{
+    const q=Math.max(1,(Number($("saleQty").value)||1)-1);
+    $("saleQty").value=q;
+  };
+  $("salePlus").onclick=()=>{
+    const q=Math.min(stock,(Number($("saleQty").value)||1)+1);
+    $("saleQty").value=q;
+  };
+  $("addToCart").onclick=()=>{
+    const q=Math.max(1,Number($("saleQty").value)||1);
+    addToCart(p,q);
+  };
 }
 
-const product=findProduct(code);
+function addToCart(p,qty){
+  const stock=inventoryStock(p.id);
+  const existing=cart.find(x=>x.product_id===p.id);
+  const newQty=(existing?.quantity||0)+qty;
+  if(newQty>stock)return toast("تعداد بیشتر از موجودی است");
 
-if(!product){
-$("saleProductCard").classList.add("hidden");
-toast("کالا پیدا نشد.");
-return;
-}
+  if(existing)existing.quantity=newQty;
+  else cart.push({
+    product_id:p.id,
+    barcode:p.barcode,
+    name:p.name,
+    unit_price:Number(p.sale_price)||0,
+    unit:p.unit,
+    quantity:qty
+  });
 
-const stock=inventoryByProductId.get(product.id)||0;
-
-$("saleProductName").textContent=product.name;
-$("saleProductBarcode").textContent="بارکد: "+product.barcode;
-$("saleProductStock").textContent="موجودی: "+fa(stock)+" "+(product.unit||"عدد");
-$("saleProductPrice").textContent=money(product.sale_price);
-$("saleProductQuantity").value="1";
-$("saleProductCard").classList.remove("hidden");
-}
-
-function addToCart(){
-const product=findProduct($("barcodeInput").value);
-if(!product)return toast("ابتدا کالا را جستجو کنید.");
-
-const stock=inventoryByProductId.get(product.id)||0;
-const qty=Math.max(1,Number(normalizeDigits($("saleQuantity").value))||1);
-const existing=saleCart.find(x=>x.productId===product.id);
-const oldQty=existing?existing.quantity:0;
-
-if(oldQty+qty>stock)return toast("موجودی کافی نیست.");
-
-if(existing){
-existing.quantity+=qty;
-}else{
-saleCart.push({
-productId:product.id,
-barcode:product.barcode,
-name:product.name,
-price:Number(product.sale_price)||0,
-unit:product.unit||"عدد",
-quantity:qty
-});
-}
-
-$("barcodeInput").value="";
-$("saleProductCard").classList.add("hidden");
-renderCart();
+  $("saleBarcode").value="";
+  $("saleProduct").innerHTML="";
+  renderCart();
 }
 
 function renderCart(){
-const list=$("selectedList");
+  const box=$("cartBox");
+  if(!box)return;
 
-if(!saleCart.length){
-list.innerHTML='<div class="cart-empty">هنوز کالایی به فاکتور اضافه نشده است.</div>';
-$("saleTotal").textContent=money(0);
-return;
-}
+  if(!cart.length){
+    box.innerHTML=`<div class="empty">سبد فروش خالی است</div>`;
+    return;
+  }
 
-let html="";
-let total=0;
+  let total=0;
+  box.innerHTML=cart.map((x,i)=>{
+    const line=x.quantity*x.unit_price;
+    total+=line;
+    return `
+      <div class="cart-row">
+        <div class="cart-top">
+          <span>${esc(x.name)}</span>
+          <button class="small-btn delete-btn" data-remove="${i}">×</button>
+        </div>
+        <div class="cart-bottom">
+          <span>${money(x.quantity)} × ${money(x.unit_price)}</span>
+          <strong>${money(line)}</strong>
+        </div>
+      </div>
+    `;
+  }).join("")+`
+    <div class="total">
+      <span>جمع کل</span>
+      <span>${money(total)}</span>
+    </div>
+    <button class="primary" id="checkout">ثبت فروش</button>
+  `;
 
-for(let i=0;i<saleCart.length;i++){
-const item=saleCart[i];
-const line=item.price*item.quantity;
-total+=line;
+  box.querySelectorAll("[data-remove]").forEach(b=>{
+    b.onclick=()=>{
+      cart.splice(Number(b.dataset.remove),1);
+      renderCart();
+    };
+  });
 
-html+=`<div class="cart-item">
-
-<div class="cart-top">
-<div class="cart-name">${escapeHTML(item.name)}</div>
-<button class="remove-item" data-remove="${i}" type="button">حذف</button>
-</div>
-<div class="cart-details">
-<span>${fa(item.quantity)} ${escapeHTML(item.unit)}</span>
-<span>${money(item.price)} × ${fa(item.quantity)}</span>
-</div>
-<div class="cart-details">
-<span>مبلغ</span>
-<strong>${money(line)}</strong>
-</div>
-</div>`;
-}list.innerHTML=html;
-$("saleTotal").textContent=money(total);
+  $("checkout").onclick=checkout;
 }
 
 async function checkout(){
-if(!saleCart.length)return toast("فاکتور خالی است.");
+  if(!cart.length)return toast("سبد فروش خالی است");
 
-for(const item of saleCart){
-const stock=inventoryByProductId.get(item.productId)||0;
-if(item.quantity>stock)return toast("موجودی "+item.name+" کافی نیست.");
+  for(const item of cart){
+    if(item.quantity>inventoryStock(item.product_id)){
+      return toast(`موجودی ${item.name} کافی نیست`);
+    }
+  }
+
+  const total=cart.reduce((s,x)=>s+x.quantity*x.unit_price,0);
+  const invoice={
+    id:crypto.randomUUID(),
+    invoice_number:String(invoices.length+1),
+    created_at:new Date().toISOString(),
+    total
+  };
+
+  const items=cart.map(x=>({
+    id:crypto.randomUUID(),
+    invoice_id:invoice.id,
+    product_id:x.product_id,
+    product_name:x.name,
+    barcode:x.barcode,
+    quantity:x.quantity,
+    unit_price:x.unit_price,
+    total:x.quantity*x.unit_price
+  }));
+
+  const oldInventory=inventory.map(x=>({...x}));
+
+  for(const item of cart){
+    const inv=inventory.find(x=>x.product_id===item.product_id);
+    if(inv)inv.stock-=item.quantity;
+    else inventory.push({product_id:item.product_id,stock:-item.quantity});
+  }
+
+  invoices.push(invoice);
+  saleItems.push(...items);
+
+  try{
+    await saveInventory();
+    await writeJSON("sales/invoices.json",invoices);
+    await writeJSON("sales/items.json",saleItems);
+    cart=[];
+    renderCart();
+    toast("فروش با موفقیت ثبت شد");
+  }catch(e){
+    inventory=oldInventory;
+    invoices.pop();
+    saleItems.splice(saleItems.length-items.length,items.length);
+    toast("ثبت فروش انجام نشد");
+  }
 }
 
-const now=new Date().toISOString();
-const next=Number(shopSettings.next_invoice_number)||1;
-const prefix=shopSettings.invoice_prefix||"INV";
-const invoiceNumber=prefix+"-"+String(next).padStart(6,"0");
-
-let total=0;
-let itemCount=0;
-
-for(const item of saleCart){
-total+=item.price*item.quantity;
-itemCount+=item.quantity;
-}
-
-const invoice={
-id:crypto.randomUUID(),
-invoice_number:invoiceNumber,
-created_at:now,
-total,
-item_count:itemCount,
-status:"completed"
-};
-
-const items=saleCart.map(item=>({
-id:crypto.randomUUID(),
-invoice_id:invoice.id,
-product_id:item.productId,
-barcode:item.barcode,
-product_name:item.name,
-unit_price:item.price,
-quantity:item.quantity,
-total:item.price*item.quantity
-}));
-
-for(const item of saleCart){
-const row=inventory.find(x=>x.product_id===item.productId);
-if(row){
-row.stock=Math.max(0,(Number(row.stock)||0)-item.quantity);
-inventoryByProductId.set(item.productId,row.stock);
-}
-}
-
-const sales=await dir(databaseDirectory,"sales");
-const inventoryDir=await dir(databaseDirectory,"inventory");
-const shop=await dir(databaseDirectory,"shop");
-
-const existingItems=await readJSON(sales,"items.json",[]);
-const allItems=Array.isArray(existingItems)?existingItems.concat(items):items;
-
-invoices.push(invoice);
-shopSettings.next_invoice_number=next+1;
-
-await Promise.all([
-writeJSON(inventoryDir,"inventory.json",inventory),
-writeJSON(sales,"invoices.json",invoices),
-writeJSON(sales,"items.json",allItems),
-writeJSON(shop,"settings.json",shopSettings)
-]);
-
-saleCart=[];
-renderCart();
-refreshHome();
-renderInventory();
-$("barcodeInput").value="";
-$("saleProductCard").classList.add("hidden");
-
-toast("فاکتور "+invoiceNumber+" ثبت شد.");
-}
-
-async function changeStock(productId,delta){
-const row=inventory.find(x=>x.product_id===productId);
-if(!row)return;
-
-row.stock=Math.max(0,(Number(row.stock)||0)+delta);
-inventoryByProductId.set(productId,row.stock);
-
-const inventoryDir=await dir(databaseDirectory,"inventory");
-await writeJSON(inventoryDir,"inventory.json",inventory);
-
-renderInventory();
-refreshHome();
-}
-
-async function deleteProduct(productId){
-const product=productsById.get(productId);
-if(!product)return;
-if(!confirm("کالا حذف شود؟"))return;
-
-products=products.filter(x=>x.id!==productId);
-inventory=inventory.filter(x=>x.product_id!==productId);
-productsById.delete(productId);
-productsByBarcode.delete(barcode(product.barcode));
-inventoryByProductId.delete(productId);
-saleCart=saleCart.filter(x=>x.productId!==productId);
-
-await saveProductsAndInventory();
-
-renderInventory();
-refreshHome();
-renderCart();
-toast("کالا حذف شد.");
+function showInventory(){
+  $("main").innerHTML=`
+    <div class="page-title">انبار</div>
+    <div class="card">
+      <div id="inventoryList"></div>
+    </div>
+  `;
+  renderInventory();
 }
 
 function renderInventory(){
-const list=$("inventoryList");
+  const box=$("inventoryList");
+  if(!box)return;
 
-if(!products.length){
-list.innerHTML='<div class="empty-state">کالایی ثبت نشده است.</div>';
-return;
+  if(!products.length){
+    box.innerHTML=`<div class="empty">هنوز کالایی ثبت نشده است</div>`;
+    return;
+  }
+
+  box.innerHTML=products.map(p=>`
+    <div class="inventory-item">
+      <div style="flex:1">
+        <div class="item-name">${esc(p.name)}</div>
+        <div class="item-sub">${esc(p.barcode)} · ${esc(p.unit)}</div>
+      </div>
+      <div class="inventory-actions">
+        <button class="small-btn" data-minus="${p.id}">−</button>
+        <span class="stock-num" id="stock-${p.id}">${money(inventoryStock(p.id))}</span>
+        <button class="small-btn" data-plus="${p.id}">+</button>
+        <button class="small-btn delete-btn" data-delete="${p.id}">×</button>
+      </div>
+    </div>
+  `).join("");
+
+  box.querySelectorAll("[data-plus]").forEach(b=>b.onclick=()=>changeStock(b.dataset.plus,1));
+  box.querySelectorAll("[data-minus]").forEach(b=>b.onclick=()=>changeStock(b.dataset.minus,-1));
+  box.querySelectorAll("[data-delete]").forEach(b=>b.onclick=()=>deleteProduct(b.dataset.delete));
 }
 
-let html="";
+async function changeStock(productId,delta){
+  const inv=inventory.find(x=>x.product_id===productId);
+  if(!inv)return;
+  const next=Math.max(0,Number(inv.stock)+delta);
+  if(next===inv.stock)return;
+  inv.stock=next;
 
-for(const product of products){
-const stock=inventoryByProductId.get(product.id)||0;
-
-html+=`<div class="inventory-item">
-
-<div class="inventory-head">
-<div>
-<div class="inventory-name">${escapeHTML(product.name)}</div>
-<div class="inventory-barcode">بارکد: ${escapeHTML(product.barcode)}</div>
-</div>
-<div class="inventory-stock">${fa(stock)}</div>
-</div>
-<div class="inventory-barcode">${escapeHTML(product.category||"سایر")} · ${escapeHTML(product.unit||"عدد")}</div>
-<div class="inventory-actions">
-<button class="stock-btn" data-plus="${product.id}" type="button">+</button>
-<button class="stock-btn" data-minus="${product.id}" type="button">−</button>
-<button class="delete-btn" data-delete="${product.id}" type="button">حذف کالا</button>
-</div>
-</div>`;
-}list.innerHTML=html;
+  try{
+    await saveInventory();
+    const el=$(`stock-${productId}`);
+    if(el)el.textContent=money(next);
+  }catch{
+    inv.stock-=delta;
+    toast("تغییر موجودی ذخیره نشد");
+  }
 }
 
-function refreshHome(){
-let stockTotal=0;
-let low=0;
+async function deleteProduct(id){
+  const p=productMap.get(id);
+  if(!p)return;
+  if(!confirm(`کالای «${p.name}» حذف شود؟`))return;
 
-for(const product of products){
-const stock=inventoryByProductId.get(product.id)||0;
-stockTotal+=stock;
-if(stock<=5)low++;
+  const pi=products.findIndex(x=>x.id===id);
+  const ii=inventory.findIndex(x=>x.product_id===id);
+  const oldP=products[pi];
+  const oldI=ii>=0?inventory[ii]:null;
+
+  products.splice(pi,1);
+  if(ii>=0)inventory.splice(ii,1);
+  productMap.delete(id);
+  barcodeMap.delete(String(p.barcode));
+
+  try{
+    await saveProducts();
+    await saveInventory();
+    renderInventory();
+    toast("کالا حذف شد");
+  }catch{
+    products.splice(pi,0,oldP);
+    if(ii>=0)inventory.splice(ii,0,oldI);
+    productMap.set(id,oldP);
+    barcodeMap.set(String(oldP.barcode),oldP);
+    renderInventory();
+    toast("حذف کالا انجام نشد");
+  }
 }
 
-const now=new Date();
-let salesTotal=0;
-let count=0;
-
-for(const invoice of invoices){
-const d=new Date(invoice.created_at);
-if(d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth()&&d.getDate()===now.getDate()){
-salesTotal+=Number(invoice.total)||0;
-count++;
-}
-}
-
-$("todaySales").textContent=money(salesTotal);
-$("todaySalesSub").textContent=count?fa(count)+" فاکتور امروز":"بدون فروش";
-$("totalStock").textContent=fa(stockTotal);
-$("lowStock").textContent=fa(low);
-}
-
-async function saveSettings(){
-shopInfo.name=$("settingsShopName").value.trim()||"فروشگاه من";
-shopSettings.currency=$("settingsCurrency").value;
-$("shopName").textContent=shopInfo.name;
-
-const shop=await dir(databaseDirectory,"shop");
-
-await Promise.all([
-writeJSON(shop,"info.json",shopInfo),
-writeJSON(shop,"settings.json",shopSettings)
-]);
-
-toast("تنظیمات ذخیره شد.");
+function showSettings(){
+  $("main").innerHTML=`
+    <div class="page-title">تنظیمات</div>
+    <div class="card">
+      <div class="connect-box">
+        <strong>وضعیت دیتابیس</strong><br>
+        ${connected?"دیتابیس متصل است":"دیتابیس متصل نیست"}
+      </div>
+      <button class="primary" id="reconnect">اتصال به دیتابیس</button>
+    </div>
+    <div class="card">
+      <div class="section-title" style="margin-top:0">فروشگاه</div>
+      <div class="item-name">${esc(shop.name||"فروشگاه من")}</div>
+      <div class="item-sub">${esc(shop.phone||"")}</div>
+    </div>
+  `;
+  $("reconnect").onclick=()=>connectDatabase(true);
 }
 
-function launchScanner(target){
-if(!connected)return;
-
-scannerTarget=target;
-
-const url=new URL(window.location.href);
-url.search="";
-url.hash="";
-url.searchParams.set("barcode","{RESULT}");
-
-const ret=encodeURIComponent(url.toString());
-window.location.href="binaryeye://scan?ret="+ret;
+function showContact(){
+  $("main").innerHTML=`
+    <div class="page-title">تماس با ما</div>
+    <div class="card">
+      <div class="item-name">BizadShop</div>
+      <div class="item-sub" style="line-height:2;margin-top:10px">
+        برای پشتیبانی و ارتباط با ما می‌توانید از راه‌های ارتباطی مجموعه استفاده کنید.
+      </div>
+    </div>
+  `;
 }
 
-function scannerReturn(){
-const params=new URLSearchParams(window.location.search);
-const result=params.get("barcode");
-
-if(!result)return;
-
-const code=barcode(result);
-
-history.replaceState({},document.title,window.location.pathname);
-
-if(scannerTarget==="product"){
-$("productOverlay").classList.add("open");
-$("productBarcode").value=code;
-$("productName").focus();
-}else{
-showPage("salePage");
-$("barcodeInput").value=code;
-searchSaleProduct();
-}
+function closeModal(){
+  $("modalOverlay").classList.remove("show");
+  scannerTarget="sale";
 }
 
-document.addEventListener("click",event=>{
-const page=event.target.closest("[data-page]");
-if(page){
-showPage(page.dataset.page);
-return;
+async function launchScanner(target){
+  scannerTarget=target;
+  const targetInput=target==="product"?"productBarcode":"saleBarcode";
+  const url=new URL(window.location.href);
+  url.search="";
+  url.hash="";
+  url.searchParams.set("barcode","{RESULT}");
+  url.searchParams.set("target",target);
+  const ret=encodeURIComponent(url.toString());
+
+  try{
+    window.location.href=`binaryeye://scan?ret=${ret}`;
+  }catch{
+    toast("Binary Eye اجرا نشد");
+  }
 }
 
-const plus=event.target.closest("[data-plus]");
-if(plus){
-changeStock(plus.dataset.plus,1);
-return;
+function handleScannerReturn(){
+  const params=new URLSearchParams(location.search);
+  const barcode=params.get("barcode");
+  const target=params.get("target");
+
+  if(!barcode)return;
+
+  history.replaceState({},document.title,location.pathname);
+  scannerTarget=target==="product"?"product":"sale";
+
+  if(scannerTarget==="product"){
+    if(!$("modalOverlay").classList.contains("show"))openProductModal();
+    setTimeout(()=>{
+      if($("productBarcode")){
+        $("productBarcode").value=barcode;
+        $("productBarcode").focus();
+      }
+    },50);
+  }else{
+    showPage("sale");
+    setTimeout(()=>{
+      if($("saleBarcode")){
+        $("saleBarcode").value=barcode;
+        lookupSale(barcode);
+      }
+    },50);
+  }
 }
 
-const minus=event.target.closest("[data-minus]");
-if(minus){
-changeStock(minus.dataset.minus,-1);
-return;
-}
+$("menuBtn").onclick=e=>{
+  e.stopPropagation();
+  $("menu").classList.toggle("show");
+};
 
-const del=event.target.closest("[data-delete]");
-if(del){
-deleteProduct(del.dataset.delete);
-return;
-}
-
-const remove=event.target.closest("[data-remove]");
-if(remove){
-saleCart.splice(Number(remove.dataset.remove),1);
-renderCart();
-}
+document.addEventListener("click",e=>{
+  if(!$("menu").contains(e.target)&&e.target!==$("menuBtn"))$("menu").classList.remove("show");
 });
 
-$("folderButton").addEventListener("click",connectDatabase);
-$("menuButton").addEventListener("click",openMenu);
-
-$("menuOverlay").addEventListener("click",e=>{
-if(e.target===$("menuOverlay"))$("menuOverlay").classList.remove("open");
+document.querySelectorAll("[data-page]").forEach(b=>{
+  b.onclick=()=>showPage(b.dataset.page);
 });
 
-$("addProductCard").addEventListener("click",openProductModal);
-$("productClose").addEventListener("click",closeProductModal);
+$("modalClose").onclick=closeModal;
 
-$("productOverlay").addEventListener("click",e=>{
-if(e.target===$("productOverlay"))closeProductModal();
+$("modalOverlay").onclick=e=>{
+  if(e.target===$("modalOverlay"))closeModal();
+};
+
+$("connectLoginBtn").onclick=()=>connectDatabase(true);
+
+$("loginBtn").onclick=async()=>{
+  const username=$("loginUsername").value.trim();
+  const password=$("loginPassword").value;
+  if(!username||!password)return toast("نام کاربری و رمز عبور را وارد کنید");
+  toast("در این نسخه ورود محلی بعد از اتصال دیتابیس فعال می‌شود");
+};
+
+window.addEventListener("pageshow",()=>{
+  handleScannerReturn();
+  updateConnection();
 });
 
-$("productSubmit").addEventListener("click",registerProduct);
-$("productScanButton").addEventListener("click",()=>launchScanner("product"));
-$("scanButton").addEventListener("click",()=>launchScanner("sale"));
-$("saleAddButton").addEventListener("click",addToCart);
-$("checkoutButton").addEventListener("click",checkout);
-$("saveSettingsButton").addEventListener("click",saveSettings);
-
-$("barcodeInput").addEventListener("keydown",e=>{
-if(e.key==="Enter"){
-e.preventDefault();
-searchSaleProduct();
-}
-});
-
-window.addEventListener("pageshow",scannerReturn);
-
-window.addEventListener("DOMContentLoaded",async()=>{
-setConnection(false);
-scannerReturn();
-await restoreConnection();
-});
+(async()=>{
+  try{
+    dbHandle=await getHandle();
+    if(dbHandle&&await verifyPermission(dbHandle,false)){
+      await ensureStructure();
+      await loadData();
+      connected=true;
+      updateConnection();
+      $("loginView").classList.add("hidden");
+      $("appView").classList.remove("hidden");
+      $("shopName").textContent=shop.name||"فروشگاه من";
+      showPage(currentPage);
+      handleScannerReturn();
+    }
+  }catch(e){
+    console.error(e);
+    connected=false;
+    updateConnection();
+  }
+})();
